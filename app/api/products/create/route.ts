@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      products: data.data.products.edges.map((edge: any) => edge.node),
+      products: data.data.products.edges.map((edge: { node: GetProductsQuery['products']['edges'][0]['node'] }) => edge.node),
       pageInfo: data.data.products.pageInfo,
     });
   } catch (error) {

@@ -29,7 +29,7 @@ interface CreateCollectionResponse {
     updatedAt: string;
   };
   error?: string;
-  details?: any;
+  details?: unknown;
 }
 
 // Valid collection rule columns

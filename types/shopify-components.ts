@@ -114,6 +114,60 @@ declare global {
         React.HTMLAttributes<HTMLElement>,
         HTMLElement
       >;
+      "s-choice-list": React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        label?: string;
+        name?: string;
+        onChange?: (event: { currentTarget: { values: string[] } }) => void;
+      };
+      "s-choice": React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        value: string;
+        selected?: boolean;
+      };
+      "s-select": React.DetailedHTMLProps<
+        React.SelectHTMLAttributes<HTMLSelectElement>,
+        HTMLSelectElement
+      > & {
+        label?: string;
+        value?: string;
+        onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
+      };
+      "s-option": React.DetailedHTMLProps<
+        React.OptionHTMLAttributes<HTMLOptionElement>,
+        HTMLOptionElement
+      > & {
+        value: string;
+      };
+      "s-text-field": React.DetailedHTMLProps<
+        React.InputHTMLAttributes<HTMLInputElement>,
+        HTMLInputElement
+      > & {
+        label?: string;
+        value?: string;
+        placeholder?: string;
+        onInput?: (event: React.FormEvent<HTMLInputElement>) => void;
+      };
+      "s-text-area": React.DetailedHTMLProps<
+        React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+        HTMLTextAreaElement
+      > & {
+        label?: string;
+        value?: string;
+        placeholder?: string;
+        rows?: number;
+        onInput?: (event: React.FormEvent<HTMLTextAreaElement>) => void;
+      };
+      "s-section": React.DetailedHTMLProps<
+        React.HTMLAttributes<HTMLElement>,
+        HTMLElement
+      > & {
+        padding?: "base" | "large" | "small";
+      };
     }
   }
 }

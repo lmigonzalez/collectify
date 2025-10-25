@@ -22,7 +22,7 @@ export const UploadingSection: React.FC<UploadingSectionProps> = ({
           </div>
 
           <p className="text-xs text-gray-500">
-            This may take a few moments. Please don't close this page.
+            This may take a few moments. Please don&apos;t close this page.
           </p>
         </div>
       </s-card>

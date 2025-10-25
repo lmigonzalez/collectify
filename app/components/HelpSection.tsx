@@ -52,17 +52,17 @@ export default function HelpSection() {
             <List>
               <List.Item>
                 <Text as="span">
-                  <Text as="span" fontWeight="bold">Single condition:</Text> "product_type equals T-Shirt"
+                  <Text as="span" fontWeight="bold">Single condition:</Text> &quot;product_type equals T-Shirt&quot;
                 </Text>
               </List.Item>
               <List.Item>
                 <Text as="span">
-                  <Text as="span" fontWeight="bold">Multiple conditions:</Text> "product_type equals T-Shirt, tag contains summer, price greater_than 20"
+                  <Text as="span" fontWeight="bold">Multiple conditions:</Text> &quot;product_type equals T-Shirt, tag contains summer, price greater_than 20&quot;
                 </Text>
               </List.Item>
               <List.Item>
                 <Text as="span">
-                  <Text as="span" fontWeight="bold">Complex conditions:</Text> "vendor equals Nike, inventory_quantity greater_than 0, price less_than 100"
+                  <Text as="span" fontWeight="bold">Complex conditions:</Text> &quot;vendor equals Nike, inventory_quantity greater_than 0, price less_than 100&quot;
                 </Text>
               </List.Item>
             </List>

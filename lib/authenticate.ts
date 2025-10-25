@@ -7,9 +7,9 @@ import { Session, RequestedTokenType } from "@shopify/shopify-api";
 
 // Type for the admin GraphQL client
 type AdminClient = {
-  graphql: <T = any>(
+  graphql: <T = unknown>(
     query: string,
-    options?: { variables?: any }
+    options?: { variables?: Record<string, unknown> }
   ) => Promise<{
     json: () => Promise<{ data: T }>;
   }>;
@@ -53,9 +53,9 @@ export async function authenticateAdmin(
       session,
       admin: {
         // Wrapper function to make GraphQL queries with type support
-        graphql: async <T = any>(
+        graphql: async <T = unknown>(
           query: string,
-          options?: { variables?: any }
+          options?: { variables?: Record<string, unknown> }
         ) => {
           // v12+ API: use request method instead of query
           const response = await client.request(query, {
@@ -187,9 +187,9 @@ export async function authenticate(request: NextRequest): Promise<AuthResult> {
     return {
       session,
       admin: {
-        graphql: async <T = any>(
+        graphql: async <T = unknown>(
           query: string,
-          options?: { variables?: any }
+          options?: { variables?: Record<string, unknown> }
         ) => {
           // v12+ API: pass query and variables in data object
           const response = await client.request(query, {

@@ -20,11 +20,20 @@ export async function GET(request: NextRequest) {
     let session, admin;
     try {
       ({ session, admin } = await authenticate(request));
-      console.log("✅ Authentication (token) successful for shop:", session.shop);
+      console.log(
+        "✅ Authentication (token) successful for shop:",
+        session.shop
+      );
     } catch (tokenAuthError) {
-      console.warn("⚠️ Token auth failed, attempting cookie session auth:", tokenAuthError);
+      console.warn(
+        "⚠️ Token auth failed, attempting cookie session auth:",
+        tokenAuthError
+      );
       ({ session, admin } = await authenticateAdmin(request));
-      console.log("✅ Authentication (cookie) successful for shop:", session.shop);
+      console.log(
+        "✅ Authentication (cookie) successful for shop:",
+        session.shop
+      );
     }
 
     // Step 2: Get query parameters
@@ -34,7 +43,11 @@ export async function GET(request: NextRequest) {
     const after = searchParams.get("after");
     const before = searchParams.get("before");
 
-    console.log(`📦 Fetching ${first} products${query ? ` with query: "${query}"` : ""}${after ? ` after cursor: ${after}` : ""}${before ? ` before cursor: ${before}` : ""}`);
+    console.log(
+      `📦 Fetching ${first} products${query ? ` with query: "${query}"` : ""}${
+        after ? ` after cursor: ${after}` : ""
+      }${before ? ` before cursor: ${before}` : ""}`
+    );
 
     // Step 3: Query products with type safety and pagination
     const response = await admin.graphql<GetProductsQuery>(
@@ -96,22 +109,32 @@ export async function GET(request: NextRequest) {
       }
     );
 
-    const data = await response.json();
+    const data = (await response.json()) as {
+      data: GetProductsQuery;
+      errors?: Array<{
+        message: string;
+        locations?: Array<{ line: number; column: number }>;
+        path?: string[];
+      }>;
+    };
 
     // Check for GraphQL errors
     if (data.errors) {
       console.error("❌ GraphQL errors:", data.errors);
       return NextResponse.json(
-        { 
-          error: "GraphQL errors", 
-          details: data.errors 
+        {
+          error: "GraphQL errors",
+          details: data.errors,
         },
         { status: 400 }
       );
     }
 
-    const products = data.data.products.edges.map((edge: any) => edge.node);
-    
+    const products = data.data.products.edges.map(
+      (edge: { node: GetProductsQuery["products"]["edges"][0]["node"] }) =>
+        edge.node
+    );
+
     console.log(`✅ Successfully fetched ${products.length} products`);
 
     return NextResponse.json({
@@ -124,12 +147,11 @@ export async function GET(request: NextRequest) {
         query: query || "none",
         first: first,
         hasNextPage: data.data.products.pageInfo.hasNextPage,
-      }
+      },
     });
-
   } catch (error) {
     console.error("❌ API error:", error);
-    
+
     if (error instanceof Error && error.message === "Authentication failed") {
       return NextResponse.json(
         { error: "Unauthorized - please authenticate" },
@@ -138,9 +160,9 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
-        error: "Failed to fetch products", 
-        details: error instanceof Error ? error.message : "Unknown error" 
+      {
+        error: "Failed to fetch products",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -155,14 +177,13 @@ export async function POST(request: NextRequest) {
   try {
     const { session, admin } = await authenticate(request);
     const body = await request.json();
-    
+
     // This could be used for creating products if needed
     // For now, we'll just return a not implemented response
     return NextResponse.json(
       { error: "Product creation not implemented in this endpoint" },
       { status: 501 }
     );
-    
   } catch (error) {
     console.error("❌ API error:", error);
     return NextResponse.json(

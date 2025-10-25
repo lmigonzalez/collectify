@@ -17,6 +17,32 @@ interface BulkImportResult {
   error?: string;
 }
 
+interface StagedUploadTarget {
+  url: string;
+  resourceUrl: string;
+  parameters: {
+    name: string;
+    value: string;
+  }[];
+}
+
+interface BulkOperation {
+  id: string;
+  status: string;
+  url: string;
+}
+
+interface CollectionRule {
+  column: string;
+  relation: string;
+  condition: string;
+  conditionObjectId?: string;
+}
+
+interface ShopifyAdmin {
+  graphql: (query: string, options?: { variables?: Record<string, unknown> }) => Promise<{ json: () => Promise<{ data: unknown }> }>;
+}
+
 interface CollectionCSVRow {
   id?: string;
   title: string;
@@ -201,7 +227,7 @@ function csvRowToCollectionInput(row: CollectionCSVRow): CollectionInput {
       if (Array.isArray(rules) && rules.length > 0) {
         input.ruleSet = {
           appliedDisjunctively: row.appliedDisjunctively || false,
-          rules: rules.map((rule: any) => ({
+          rules: rules.map((rule: CollectionRule) => ({
             column: rule.column as CollectionRuleColumn,
             relation: rule.relation as CollectionRuleRelation,
             condition: rule.condition,
@@ -229,7 +255,7 @@ function createJSONLFromCollections(collections: CollectionInput[]): string {
 /**
  * Creates staged upload for bulk operation
  */
-async function createStagedUpload(admin: any, filename: string) {
+async function createStagedUpload(admin: ShopifyAdmin, filename: string): Promise<StagedUploadTarget> {
   const response = await admin.graphql(
     `
     mutation stagedUploadsCreate($input: [StagedUploadInput!]!) {
@@ -267,7 +293,7 @@ async function createStagedUpload(admin: any, filename: string) {
 
   if (data.data?.stagedUploadsCreate?.userErrors?.length > 0) {
     throw new Error(
-      data.data.stagedUploadsCreate.userErrors.map((e) => e.message).join(", ")
+      data.data.stagedUploadsCreate.userErrors.map((e: { message: string }) => e.message).join(", ")
     );
   }
 
@@ -277,11 +303,11 @@ async function createStagedUpload(admin: any, filename: string) {
 /**
  * Uploads JSONL data to staged upload URL
  */
-async function uploadJSONLToStagedUpload(stagedTarget: any, jsonlData: string) {
+async function uploadJSONLToStagedUpload(stagedTarget: StagedUploadTarget, jsonlData: string): Promise<Response> {
   const formData = new FormData();
 
   // Add all parameters from staged upload
-  stagedTarget.parameters.forEach((param: any) => {
+  stagedTarget.parameters.forEach((param: { name: string; value: string }) => {
     formData.append(param.name, param.value);
   });
 
@@ -305,7 +331,7 @@ async function uploadJSONLToStagedUpload(stagedTarget: any, jsonlData: string) {
 /**
  * Creates bulk mutation operation
  */
-async function createBulkOperation(admin: any, stagedUploadPath: string) {
+async function createBulkOperation(admin: ShopifyAdmin, stagedUploadPath: string): Promise<BulkOperation> {
   const mutation = `
     mutation call($input: CollectionInput!) {
       collectionCreate(input: $input) {
@@ -353,7 +379,7 @@ async function createBulkOperation(admin: any, stagedUploadPath: string) {
   if (data.data?.bulkOperationRunMutation?.userErrors?.length > 0) {
     throw new Error(
       data.data.bulkOperationRunMutation.userErrors
-        .map((e) => e.message)
+        .map((e: { message: string }) => e.message)
         .join(", ")
     );
   }
@@ -438,10 +464,12 @@ export async function POST(
     console.log("⬆️ Uploaded JSONL data to staged upload");
 
     // Step 8: Create bulk operation
-    const bulkOperation = await createBulkOperation(
-      admin,
-      stagedTarget.parameters.find((p: any) => p.name === "key")?.value
-    );
+    const keyParam = stagedTarget.parameters.find((p: { name: string; value: string }) => p.name === "key");
+    if (!keyParam?.value) {
+      throw new Error("Failed to find key parameter in staged upload response");
+    }
+    
+    const bulkOperation = await createBulkOperation(admin, keyParam.value);
     console.log("🚀 Created bulk operation:", bulkOperation.id);
 
     return NextResponse.json({

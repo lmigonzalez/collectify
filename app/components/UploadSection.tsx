@@ -45,7 +45,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
                 <s-checkbox
                   checked={useBulkOperations}
                   onChange={(e) =>
-                    onBulkOperationsChange((e.currentTarget as any).checked)
+                    onBulkOperationsChange((e.currentTarget as unknown as HTMLInputElement).checked)
                   }
                 />
                 <span className="text-sm text-gray-500">

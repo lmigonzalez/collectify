@@ -209,7 +209,15 @@ export default function CreateCollection() {
     fetchProducts();
   }, []);
 
-  const handleInputChange = (field: keyof FormData, value: any) => {
+  const handleInputChange = (
+    field: keyof FormData,
+    value:
+      | string
+      | boolean
+      | CollectionSortOrder
+      | CollectionRuleInput[]
+      | string[]
+  ) => {
     console.log(`Updating ${field} to:`, value); // Debug log
     setFormData((prev) => {
       const newData = { ...prev, [field]: value };
@@ -243,6 +251,15 @@ export default function CreateCollection() {
     }
   };
 
+  const handleSortOrderChange = (event: {
+    currentTarget: { value: string };
+  }) => {
+    handleInputChange(
+      "sortOrder",
+      event.currentTarget.value as CollectionSortOrder
+    );
+  };
+
   const addRule = () => {
     setFormData((prev) => ({
       ...prev,
@@ -260,7 +277,7 @@ export default function CreateCollection() {
   const updateRule = (
     index: number,
     field: keyof CollectionRuleInput,
-    value: any
+    value: CollectionRuleColumn | CollectionRuleRelation | string
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -469,7 +486,7 @@ export default function CreateCollection() {
           <s-choice-list
             label="Published Status"
             name="Published Status"
-            onChange={(event: any) => {
+            onChange={(event: { currentTarget: { values: string[] } }) => {
               const values = event.currentTarget.values;
               handleInputChange("published", values[0] === "published");
             }}
@@ -486,7 +503,7 @@ export default function CreateCollection() {
           <s-choice-list
             label="Collection Type"
             name="Collection Type"
-            onChange={(event: any) => {
+            onChange={(event: { currentTarget: { values: string[] } }) => {
               const values = event.currentTarget.values;
               console.log("Collection Type onChange - values:", values);
               handleInputChange("collectionType", values[0]);
@@ -511,7 +528,7 @@ export default function CreateCollection() {
           <s-select
             label="Sort Order"
             value={formData.sortOrder}
-            onChange={(value) => handleInputChange("sortOrder", value)}
+            onChange={handleSortOrderChange}
           >
             {SORT_ORDERS.map((order) => (
               <s-option key={order.value} value={order.value}>
@@ -655,13 +672,13 @@ export default function CreateCollection() {
             accept=".jpg,.png,.gif"
             multiple
             onInput={(e) =>
-              console.log("onInput", (e.currentTarget as any)?.value)
+              console.log("onInput", e)
             }
             onChange={(e) =>
-              console.log("onChange", (e.currentTarget as any)?.value)
+              console.log("onChange", e)
             }
             onDropRejected={(e) =>
-              console.log("onDropRejected", (e.currentTarget as any)?.value)
+              console.log("onDropRejected", e)
             }
           />
           <s-text-field

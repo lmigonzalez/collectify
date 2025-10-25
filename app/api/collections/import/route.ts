@@ -20,7 +20,7 @@ interface ImportResult {
   results: {
     row: number;
     title: string;
-    status: 'success' | 'error';
+    status: "success" | "error";
     message: string;
     collectionId?: string;
   }[];
@@ -32,7 +32,7 @@ interface CollectionCSVRow {
   title: string;
   handle?: string;
   descriptionHtml?: string;
-  type: 'manual' | 'smart';
+  type: "manual" | "smart";
   products?: string;
   rules?: string;
   appliedDisjunctively?: boolean;
@@ -49,10 +49,10 @@ interface CollectionCSVRow {
  * Parses CSV content into rows
  */
 function parseCSV(csvContent: string): CollectionCSVRow[] {
-  const lines = csvContent.split('\n').filter(line => line.trim());
+  const lines = csvContent.split("\n").filter((line) => line.trim());
   if (lines.length < 2) return [];
 
-  const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+  const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
   const rows: CollectionCSVRow[] = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -60,58 +60,58 @@ function parseCSV(csvContent: string): CollectionCSVRow[] {
     if (values.length !== headers.length) continue;
 
     const row: CollectionCSVRow = {
-      title: '',
-      type: 'manual'
+      title: "",
+      type: "manual",
     };
 
     headers.forEach((header, index) => {
-      const value = values[index]?.replace(/"/g, '') || '';
-      
+      const value = values[index]?.replace(/"/g, "") || "";
+
       switch (header) {
-        case 'id':
+        case "id":
           row.id = value;
           break;
-        case 'title':
+        case "title":
           row.title = value;
           break;
-        case 'handle':
+        case "handle":
           row.handle = value;
           break;
-        case 'descriptionHtml':
+        case "descriptionHtml":
           row.descriptionHtml = value;
           break;
-        case 'type':
-          row.type = (value as 'manual' | 'smart') || 'manual';
+        case "type":
+          row.type = (value as "manual" | "smart") || "manual";
           break;
-        case 'products':
+        case "products":
           row.products = value;
           break;
-        case 'rules':
+        case "rules":
           row.rules = value;
           break;
-        case 'appliedDisjunctively':
-          row.appliedDisjunctively = value.toLowerCase() === 'true';
+        case "appliedDisjunctively":
+          row.appliedDisjunctively = value.toLowerCase() === "true";
           break;
-        case 'sortOrder':
+        case "sortOrder":
           row.sortOrder = value;
           break;
-        case 'imageUrl':
+        case "imageUrl":
           row.imageUrl = value;
           break;
-        case 'imageAlt':
+        case "imageAlt":
           row.imageAlt = value;
           break;
-        case 'seoTitle':
+        case "seoTitle":
           row.seoTitle = value;
           break;
-        case 'seoDescription':
+        case "seoDescription":
           row.seoDescription = value;
           break;
-        case 'templateSuffix':
+        case "templateSuffix":
           row.templateSuffix = value;
           break;
-        case 'published':
-          row.published = value.toLowerCase() === 'true';
+        case "published":
+          row.published = value.toLowerCase() === "true";
           break;
       }
     });
@@ -129,7 +129,7 @@ function parseCSV(csvContent: string): CollectionCSVRow[] {
  */
 function parseCSVLine(line: string): string[] {
   const result: string[] = [];
-  let current = '';
+  let current = "";
   let inQuotes = false;
   let i = 0;
 
@@ -147,10 +147,10 @@ function parseCSVLine(line: string): string[] {
         // Toggle quote state
         inQuotes = !inQuotes;
       }
-    } else if (char === ',' && !inQuotes) {
+    } else if (char === "," && !inQuotes) {
       // End of field
       result.push(current);
-      current = '';
+      current = "";
     } else {
       current += char;
     }
@@ -180,7 +180,7 @@ function csvRowToCollectionInput(row: CollectionCSVRow): CollectionInput {
   if (row.imageUrl) {
     input.image = {
       src: row.imageUrl,
-      alt: row.imageAlt || ''
+      alt: row.imageAlt || "",
     };
   }
 
@@ -188,39 +188,46 @@ function csvRowToCollectionInput(row: CollectionCSVRow): CollectionInput {
   if (row.seoTitle || row.seoDescription) {
     input.seo = {
       title: row.seoTitle,
-      description: row.seoDescription
+      description: row.seoDescription,
     };
   }
 
   // Add products for manual collections
-  if (row.type === 'manual' && row.products) {
+  if (row.type === "manual" && row.products) {
     const productIds = row.products
-      .split(',')
-      .map(id => id.trim())
-      .filter(id => id && id.startsWith('gid://shopify/Product/'));
-    
+      .split(",")
+      .map((id) => id.trim())
+      .filter((id) => id && id.startsWith("gid://shopify/Product/"));
+
     if (productIds.length > 0) {
       input.products = productIds;
     }
   }
 
   // Add rules for smart collections
-  if (row.type === 'smart' && row.rules) {
+  if (row.type === "smart" && row.rules) {
     try {
       const rules = JSON.parse(row.rules);
       if (Array.isArray(rules) && rules.length > 0) {
         input.ruleSet = {
           appliedDisjunctively: row.appliedDisjunctively || false,
-          rules: rules.map((rule: any) => ({
-            column: rule.column as CollectionRuleColumn,
-            relation: rule.relation as CollectionRuleRelation,
-            condition: rule.condition,
-            conditionObjectId: rule.conditionObjectId
-          }))
+          rules: rules.map(
+            (rule: {
+              column: string;
+              relation: string;
+              condition: string;
+              conditionObjectId?: string;
+            }) => ({
+              column: rule.column as CollectionRuleColumn,
+              relation: rule.relation as CollectionRuleRelation,
+              condition: rule.condition,
+              conditionObjectId: rule.conditionObjectId,
+            })
+          ),
         };
       }
     } catch (error) {
-      console.warn('Failed to parse rules JSON:', error);
+      console.warn("Failed to parse rules JSON:", error);
     }
   }
 
@@ -241,15 +248,23 @@ function validateCSVRow(row: CollectionCSVRow, rowNumber: number): string[] {
     errors.push(`Row ${rowNumber}: Title must be 255 characters or less`);
   }
 
-  if (row.type === 'manual' && (!row.products || row.products.trim().length === 0)) {
+  if (
+    row.type === "manual" &&
+    (!row.products || row.products.trim().length === 0)
+  ) {
     errors.push(`Row ${rowNumber}: Manual collections must have products`);
   }
 
-  if (row.type === 'smart' && (!row.rules || row.rules.trim().length === 0)) {
+  if (row.type === "smart" && (!row.rules || row.rules.trim().length === 0)) {
     errors.push(`Row ${rowNumber}: Smart collections must have rules`);
   }
 
-  if (row.sortOrder && !Object.values(CollectionSortOrder).includes(row.sortOrder as CollectionSortOrder)) {
+  if (
+    row.sortOrder &&
+    !Object.values(CollectionSortOrder).includes(
+      row.sortOrder as CollectionSortOrder
+    )
+  ) {
     errors.push(`Row ${rowNumber}: Invalid sort order`);
   }
 
@@ -260,7 +275,12 @@ function validateCSVRow(row: CollectionCSVRow, rowNumber: number): string[] {
  * Creates a collection using the collection creation endpoint
  */
 async function createCollection(
-  admin: any,
+  admin: {
+    graphql: <T = unknown>(
+      query: string,
+      options?: { variables?: Record<string, unknown> }
+    ) => Promise<{ json: () => Promise<{ data: T }> }>;
+  },
   input: CollectionInput
 ): Promise<{ success: boolean; collectionId?: string; error?: string }> {
   try {
@@ -281,8 +301,8 @@ async function createCollection(
       `,
       {
         variables: {
-          input
-        } as CollectionCreateMutationVariables
+          input,
+        } as CollectionCreateMutationVariables,
       }
     );
 
@@ -291,18 +311,20 @@ async function createCollection(
     if (data.data?.collectionCreate?.userErrors?.length > 0) {
       return {
         success: false,
-        error: data.data.collectionCreate.userErrors.map(e => e.message).join(', ')
+        error: data.data.collectionCreate.userErrors
+          .map((e) => e.message)
+          .join(", "),
       };
     }
 
     return {
       success: true,
-      collectionId: data.data.collectionCreate.collection?.id
+      collectionId: data.data.collectionCreate.collection?.id,
     };
   } catch (error) {
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error'
+      error: error instanceof Error ? error.message : "Unknown error",
     };
   }
 }
@@ -310,18 +332,23 @@ async function createCollection(
 /**
  * POST endpoint to import collections from CSV
  */
-export async function POST(request: NextRequest): Promise<NextResponse<ImportResult>> {
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<ImportResult>> {
   try {
     // Step 1: Authenticate the request
     const { session, admin } = await authenticate(request);
 
     console.log("🔐 Authenticated for shop:", session.shop);
-    console.log("🔑 Using token:", session.accessToken?.substring(0, 20) + "...");
+    console.log(
+      "🔑 Using token:",
+      session.accessToken?.substring(0, 20) + "..."
+    );
 
     // Step 2: Parse form data
     const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const dryRun = formData.get('dryRun') === 'true';
+    const file = formData.get("file") as File;
+    const dryRun = formData.get("dryRun") === "true";
 
     if (!file) {
       return NextResponse.json(
@@ -331,7 +358,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
           updated: 0,
           errors: 0,
           results: [],
-          error: "No file provided"
+          error: "No file provided",
         },
         { status: 400 }
       );
@@ -349,7 +376,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
           updated: 0,
           errors: 0,
           results: [],
-          error: "No valid rows found in CSV"
+          error: "No valid rows found in CSV",
         },
         { status: 400 }
       );
@@ -369,22 +396,22 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
           created: 0,
           updated: 0,
           errors: validationErrors.length,
-          results: validationErrors.map(error => ({
+          results: validationErrors.map((error) => ({
             row: 0,
-            title: '',
-            status: 'error' as const,
-            message: error
+            title: "",
+            status: "error" as const,
+            message: error,
           })),
-          error: "Validation failed"
+          error: "Validation failed",
         },
         { status: 400 }
       );
     }
 
     // Step 5: Process rows
-    const results: ImportResult['results'] = [];
+    const results: ImportResult["results"] = [];
     let created = 0;
-    let updated = 0;
+    const updated = 0;
     let errors = 0;
 
     for (let i = 0; i < rows.length; i++) {
@@ -397,8 +424,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
           results.push({
             row: rowNumber,
             title: row.title,
-            status: 'success',
-            message: 'Valid - would be created'
+            status: "success",
+            message: "Valid - would be created",
           });
           created++;
         } else {
@@ -410,17 +437,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
             results.push({
               row: rowNumber,
               title: row.title,
-              status: 'success',
-              message: 'Collection created successfully',
-              collectionId: result.collectionId
+              status: "success",
+              message: "Collection created successfully",
+              collectionId: result.collectionId,
             });
             created++;
           } else {
             results.push({
               row: rowNumber,
               title: row.title,
-              status: 'error',
-              message: result.error || 'Failed to create collection'
+              status: "error",
+              message: result.error || "Failed to create collection",
             });
             errors++;
           }
@@ -429,8 +456,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
         results.push({
           row: rowNumber,
           title: row.title,
-          status: 'error',
-          message: error instanceof Error ? error.message : 'Unknown error'
+          status: "error",
+          message: error instanceof Error ? error.message : "Unknown error",
         });
         errors++;
       }
@@ -441,9 +468,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
       created,
       updated,
       errors,
-      results
+      results,
     });
-
   } catch (error) {
     console.error("❌ Collection import error:", error);
 
@@ -455,7 +481,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
           updated: 0,
           errors: 0,
           results: [],
-          error: "Unauthorized - please authenticate"
+          error: "Unauthorized - please authenticate",
         },
         { status: 401 }
       );
@@ -469,7 +495,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ImportRes
         errors: 0,
         results: [],
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -486,45 +512,55 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({
       success: true,
       data: {
-        supportedFormats: ['CSV'],
-        maxFileSize: '10MB',
+        supportedFormats: ["CSV"],
+        maxFileSize: "10MB",
         maxRows: 1000,
-        requiredFields: ['title', 'type'],
+        requiredFields: ["title", "type"],
         optionalFields: [
-          'handle', 'descriptionHtml', 'products', 'rules', 
-          'appliedDisjunctively', 'sortOrder', 'imageUrl', 
-          'imageAlt', 'seoTitle', 'seoDescription', 'templateSuffix', 'published'
+          "handle",
+          "descriptionHtml",
+          "products",
+          "rules",
+          "appliedDisjunctively",
+          "sortOrder",
+          "imageUrl",
+          "imageAlt",
+          "seoTitle",
+          "seoDescription",
+          "templateSuffix",
+          "published",
         ],
         examples: {
           manualCollection: {
-            title: 'Sample Manual Collection',
-            handle: 'sample-manual-collection',
-            descriptionHtml: '<p>This is a manual collection</p>',
-            type: 'manual',
-            products: 'gid://shopify/Product/123,gid://shopify/Product/456',
-            sortOrder: 'MANUAL',
-            imageUrl: 'https://example.com/image.jpg',
-            imageAlt: 'Sample Image',
-            seoTitle: 'Sample Collection - SEO Title',
-            seoDescription: 'Sample collection description',
-            published: 'true'
+            title: "Sample Manual Collection",
+            handle: "sample-manual-collection",
+            descriptionHtml: "<p>This is a manual collection</p>",
+            type: "manual",
+            products: "gid://shopify/Product/123,gid://shopify/Product/456",
+            sortOrder: "MANUAL",
+            imageUrl: "https://example.com/image.jpg",
+            imageAlt: "Sample Image",
+            seoTitle: "Sample Collection - SEO Title",
+            seoDescription: "Sample collection description",
+            published: "true",
           },
           smartCollection: {
-            title: 'Sample Smart Collection',
-            handle: 'sample-smart-collection',
-            descriptionHtml: '<p>This is a smart collection</p>',
-            type: 'smart',
-            rules: '[{"column":"TYPE","relation":"EQUALS","condition":"Electronics"}]',
-            appliedDisjunctively: 'false',
-            sortOrder: 'PRICE_ASC',
-            imageUrl: 'https://example.com/smart-image.jpg',
-            imageAlt: 'Smart Collection Image',
-            seoTitle: 'Smart Collection - SEO Title',
-            seoDescription: 'Smart collection description',
-            published: 'true'
-          }
-        }
-      }
+            title: "Sample Smart Collection",
+            handle: "sample-smart-collection",
+            descriptionHtml: "<p>This is a smart collection</p>",
+            type: "smart",
+            rules:
+              '[{"column":"TYPE","relation":"EQUALS","condition":"Electronics"}]',
+            appliedDisjunctively: "false",
+            sortOrder: "PRICE_ASC",
+            imageUrl: "https://example.com/smart-image.jpg",
+            imageAlt: "Smart Collection Image",
+            seoTitle: "Smart Collection - SEO Title",
+            seoDescription: "Smart collection description",
+            published: "true",
+          },
+        },
+      },
     });
   } catch (error) {
     console.error("❌ Error fetching import info:", error);
@@ -537,18 +573,18 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * USAGE EXAMPLES:
- * 
+ *
  * 1. Import collections from CSV:
  * POST /api/collections/import
  * FormData with 'file' field containing CSV
- * 
+ *
  * 2. Dry run (validate only):
  * POST /api/collections/import
  * FormData with 'file' field and 'dryRun=true'
- * 
+ *
  * 3. Get import information:
  * GET /api/collections/import
- * 
+ *
  * CSV Format:
  * id,title,handle,descriptionHtml,type,products,rules,appliedDisjunctively,sortOrder,imageUrl,imageAlt,seoTitle,seoDescription,templateSuffix,published,createdAt,updatedAt
  * gid://shopify/Collection/NEW_MANUAL,"Sample Manual Collection",sample-manual,"<p>Manual collection</p>",manual,"gid://shopify/Product/123,gid://shopify/Product/456",,false,MANUAL,https://example.com/image.jpg,Sample Image,Sample SEO Title,Sample description,,true,2024-01-01T00:00:00Z,2024-01-01T00:00:00Z
