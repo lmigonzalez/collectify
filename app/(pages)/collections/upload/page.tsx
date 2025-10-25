@@ -241,7 +241,7 @@ export default function UploadPage() {
 
   return (
     <s-page heading="Upload Collections from CSV">
-      <s-stack direction="block" gap="base">
+      <s-stack direction="block" gap="base" padding="base">
         <s-box
           padding="base"
           background="base"
@@ -287,21 +287,21 @@ export default function UploadPage() {
           bulkOperationStatus={bulkOperationStatus}
           isCheckingStatus={isCheckingStatus}
         />
-      </s-stack>
 
-      {/* Action Buttons */}
-      <div className="flex gap-3" slot="primary-action">
-        {currentStep.step === "complete" && (
-          <s-button variant="primary" onClick={resetUpload}>
-            Upload Another File
-          </s-button>
-        )}
-        {currentStep.step === "uploading" && (
-          <s-button variant="secondary" onClick={resetUpload} disabled>
-            Cancel Upload
-          </s-button>
-        )}
-      </div>
+        {/* Action Buttons */}
+        <div className="flex gap-3" slot="primary-action">
+          {currentStep.step === "complete" && (
+            <s-button variant="primary" onClick={resetUpload}>
+              Upload Another File
+            </s-button>
+          )}
+          {currentStep.step === "uploading" && (
+            <s-button variant="secondary" onClick={resetUpload} disabled>
+              Cancel Upload
+            </s-button>
+          )}
+        </div>
+      </s-stack>
     </s-page>
   );
 }
