@@ -1,0 +1,7 @@
+# Configuration for your Next.js web app
+# This tells Shopify CLI how to start and manage your app
+
+type = "frontend"
+
+[commands]
+dev = "npm run dev:next"
