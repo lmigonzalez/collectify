@@ -15,43 +15,6 @@ import {
   CSVPreviewData,
   UploadStep,
 } from "../../../../types/upload";
-// Import Shopify component types
-import "../../../../types/shopify-components";
-
-// Temporary type declarations for Shopify web components
-declare global {
-  namespace JSX {
-    interface IntrinsicElements {
-      "s-page": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      > & {
-        heading?: string;
-      };
-      "s-layout": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "s-layout-section": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "s-card": React.DetailedHTMLProps<
-        React.HTMLAttributes<HTMLElement>,
-        HTMLElement
-      >;
-      "s-button": React.DetailedHTMLProps<
-        React.ButtonHTMLAttributes<HTMLButtonElement>,
-        HTMLButtonElement
-      > & {
-        variant?: "primary" | "secondary" | "tertiary";
-        slot?: "primary-action" | "secondary-actions";
-        disabled?: boolean;
-        onClick?: () => void;
-      };
-    }
-  }
-}
 
 export default function UploadPage() {
   const [isUploading, setIsUploading] = useState(false);
@@ -242,23 +205,11 @@ export default function UploadPage() {
     }
   };
 
-  const handleDropZoneChange = (event: React.FormEvent<HTMLElement>) => {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
-    }
+  const handleBulkOperationsChange = (useBulk: boolean) => {
+    setUseBulkOperations(useBulk);
   };
 
-  const handleDropZoneInput = (event: React.FormEvent<HTMLElement>) => {
-    const target = event.target as HTMLInputElement;
-    const file = target.files?.[0];
-    if (file) {
-      handleFileUpload(file);
-    }
-  };
-
-  const handleDropRejected = (event: React.FormEvent<HTMLElement>) => {
+  const handleDropRejected = (event: Event) => {
     console.log("File rejected:", event);
     alert("Please select a valid CSV file");
   };
@@ -290,29 +241,21 @@ export default function UploadPage() {
 
   return (
     <s-page heading="Upload Collections from CSV">
-      <s-layout>
-        <s-layout-section>
-          <s-card>
-            <div style={{ padding: "24px" }}>
-              <div className="mb-6" style={{ marginBottom: "24px" }}>
-                <h2 className="text-2xl font-bold text-gray-900">
-                  {currentStep.title}
-                </h2>
-                <p className="text-sm text-gray-500">
-                  {currentStep.description}
-                </p>
-              </div>
-
-              <ProgressSteps currentStep={currentStep} />
-            </div>
-          </s-card>
-        </s-layout-section>
+      <s-stack direction="block" gap="base">
+        <s-box
+          padding="base"
+          background="base"
+          border="base"
+          borderRadius="base"
+        >
+          <ProgressSteps currentStep={currentStep} />
+        </s-box>
 
         {/* Upload Step */}
         {currentStep.step === "upload" && (
           <UploadSection
             useBulkOperations={useBulkOperations}
-            onBulkOperationsChange={setUseBulkOperations}
+            onBulkOperationsChange={handleBulkOperationsChange}
             onFileUpload={handleFileUpload}
             onDropRejected={handleDropRejected}
           />
@@ -320,13 +263,15 @@ export default function UploadPage() {
 
         {/* Preview Step */}
         {currentStep.step === "preview" && csvPreview && (
-          <PreviewSection
-            csvPreview={csvPreview}
-            selectedFile={selectedFile}
-            isValidating={isValidating}
-            onConfirmUpload={handleConfirmUpload}
-            onGoBack={goBackToUpload}
-          />
+          <s-box>
+            <PreviewSection
+              csvPreview={csvPreview}
+              selectedFile={selectedFile}
+              isValidating={isValidating}
+              onConfirmUpload={handleConfirmUpload}
+              onGoBack={goBackToUpload}
+            />
+          </s-box>
         )}
 
         {/* Uploading Step */}
@@ -342,7 +287,7 @@ export default function UploadPage() {
           bulkOperationStatus={bulkOperationStatus}
           isCheckingStatus={isCheckingStatus}
         />
-      </s-layout>
+      </s-stack>
 
       {/* Action Buttons */}
       <div className="flex gap-3" slot="primary-action">

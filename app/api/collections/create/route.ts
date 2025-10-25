@@ -5,11 +5,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/lib/authenticate";
 import type {
   CollectionInput,
+  CollectionCreateMutation,
+  CollectionCreateMutationVariables,
+  CollectionImageInput,
+  CollectionSEOInput,
+} from "@/types/graphql";
+import {
   CollectionRuleColumn,
   CollectionRuleRelation,
   CollectionSortOrder,
-  CollectionCreateMutation,
-  CollectionCreateMutationVariables,
 } from "@/types/graphql";
 
 interface CreateCollectionResponse {
@@ -19,10 +23,18 @@ interface CreateCollectionResponse {
     title: string;
     handle: string;
     descriptionHtml: string;
-    image?: CollectionImage;
-    seo?: CollectionSEO;
+    image?: CollectionImageInput;
+    seo?: CollectionSEOInput;
     sortOrder: string;
-    ruleSet?: CollectionRuleSet;
+    ruleSet?: {
+      appliedDisjunctively: boolean;
+      rules: {
+        column: CollectionRuleColumn;
+        relation: CollectionRuleRelation;
+        condition: string;
+        conditionObjectId?: string;
+      }[];
+    };
     productsCount?: number;
     publishedOnCurrentPublication: boolean;
     createdAt: string;
@@ -44,7 +56,10 @@ const VALID_SORT_ORDERS = Object.values(CollectionSortOrder);
 /**
  * Validates collection input
  */
-function validateCollectionInput(input: CollectionInput): { valid: boolean; errors: string[] } {
+function validateCollectionInput(input: CollectionInput): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // Required fields
@@ -63,7 +78,9 @@ function validateCollectionInput(input: CollectionInput): { valid: boolean; erro
 
   // Validate sort order
   if (input.sortOrder && !VALID_SORT_ORDERS.includes(input.sortOrder)) {
-    errors.push(`Invalid sort order. Must be one of: ${VALID_SORT_ORDERS.join(', ')}`);
+    errors.push(
+      `Invalid sort order. Must be one of: ${VALID_SORT_ORDERS.join(", ")}`
+    );
   }
 
   // Validate rule set for smart collections
@@ -74,56 +91,81 @@ function validateCollectionInput(input: CollectionInput): { valid: boolean; erro
 
     input.ruleSet.rules.forEach((rule, index) => {
       if (!rule.column || !VALID_RULE_COLUMNS.includes(rule.column)) {
-        errors.push(`Rule ${index + 1}: Invalid column. Must be one of: ${VALID_RULE_COLUMNS.join(', ')}`);
+        errors.push(
+          `Rule ${
+            index + 1
+          }: Invalid column. Must be one of: ${VALID_RULE_COLUMNS.join(", ")}`
+        );
       }
 
       if (!rule.relation || !VALID_RULE_RELATIONS.includes(rule.relation)) {
-        errors.push(`Rule ${index + 1}: Invalid relation. Must be one of: ${VALID_RULE_RELATIONS.join(', ')}`);
+        errors.push(
+          `Rule ${
+            index + 1
+          }: Invalid relation. Must be one of: ${VALID_RULE_RELATIONS.join(
+            ", "
+          )}`
+        );
       }
 
-      if (!rule.condition && rule.relation !== 'IS_SET' && rule.relation !== 'IS_NOT_SET') {
-        errors.push(`Rule ${index + 1}: Condition is required for this relation type`);
+      if (
+        !rule.condition &&
+        rule.relation !== "IS_SET" &&
+        rule.relation !== "IS_NOT_SET"
+      ) {
+        errors.push(
+          `Rule ${index + 1}: Condition is required for this relation type`
+        );
       }
     });
   }
 
   // Validate that we have either products (manual) or rules (smart), not both
   if (input.products && input.products.length > 0 && input.ruleSet) {
-    errors.push("Cannot specify both products and rules. Choose either manual collection (products) or smart collection (rules)");
+    errors.push(
+      "Cannot specify both products and rules. Choose either manual collection (products) or smart collection (rules)"
+    );
   }
 
   // Validate that we have either products or rules
   if (!input.products && !input.ruleSet) {
-    errors.push("Must specify either products for manual collection or rules for smart collection");
+    errors.push(
+      "Must specify either products for manual collection or rules for smart collection"
+    );
   }
 
   return {
     valid: errors.length === 0,
-    errors
+    errors,
   };
 }
 
 /**
  * Creates a collection using Shopify GraphQL API
  */
-export async function POST(request: NextRequest): Promise<NextResponse<CreateCollectionResponse>> {
+export async function POST(
+  request: NextRequest
+): Promise<NextResponse<CreateCollectionResponse>> {
   try {
     // Step 1: Authenticate the request
     const { session, admin } = await authenticate(request);
 
     console.log("🔐 Authenticated for shop:", session.shop);
-    console.log("🔑 Using token:", session.accessToken?.substring(0, 20) + "...");
+    console.log(
+      "🔑 Using token:",
+      session.accessToken?.substring(0, 20) + "..."
+    );
 
     // Step 2: Parse and validate request body
     const body: CollectionInput = await request.json();
-    
+
     const validation = validateCollectionInput(body);
     if (!validation.valid) {
       return NextResponse.json(
         {
           success: false,
           error: "Validation failed",
-          details: validation.errors
+          details: validation.errors,
         },
         { status: 400 }
       );
@@ -168,12 +210,14 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateCol
     if (body.ruleSet) {
       collectionInput.ruleSet = {
         appliedDisjunctively: body.ruleSet.appliedDisjunctively,
-        rules: body.ruleSet.rules.map(rule => ({
+        rules: body.ruleSet.rules.map((rule) => ({
           column: rule.column,
           relation: rule.relation,
           condition: rule.condition,
-          ...(rule.conditionObjectId && { conditionObjectId: rule.conditionObjectId })
-        }))
+          ...(rule.conditionObjectId && {
+            conditionObjectId: rule.conditionObjectId,
+          }),
+        })),
       };
     }
 
@@ -221,8 +265,8 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateCol
       `,
       {
         variables: {
-          input: collectionInput
-        } as CollectionCreateMutationVariables
+          input: collectionInput,
+        } as CollectionCreateMutationVariables,
       }
     );
 
@@ -234,7 +278,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateCol
         {
           success: false,
           error: "GraphQL errors",
-          details: data.data.collectionCreate.userErrors
+          details: data.data.collectionCreate.userErrors,
         },
         { status: 400 }
       );
@@ -242,7 +286,18 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateCol
 
     // Step 6: Return success response
     const collection = data.data.collectionCreate.collection;
-    
+
+    if (!collection) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Collection creation failed",
+          details: "No collection returned from GraphQL mutation",
+        },
+        { status: 500 }
+      );
+    }
+
     return NextResponse.json({
       success: true,
       collection: {
@@ -250,20 +305,21 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateCol
         title: collection.title,
         handle: collection.handle,
         descriptionHtml: collection.descriptionHtml,
-        image: collection.image ? {
-          src: collection.image.url,
-          alt: collection.image.altText
-        } : undefined,
+        image: collection.image
+          ? {
+              src: collection.image.url,
+              alt: collection.image.altText,
+            }
+          : undefined,
         seo: collection.seo,
         sortOrder: collection.sortOrder,
         ruleSet: collection.ruleSet,
         productsCount: collection.productsCount,
         publishedOnCurrentPublication: collection.publishedOnCurrentPublication,
         createdAt: collection.createdAt,
-        updatedAt: collection.updatedAt
-      }
+        updatedAt: collection.updatedAt,
+      },
     });
-
   } catch (error) {
     console.error("❌ Collection creation error:", error);
 
@@ -275,10 +331,10 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateCol
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
+      {
+        success: false,
         error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );
@@ -303,12 +359,15 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
           manualCollection: {
             title: "Summer Collection",
             descriptionHtml: "<p>Our best summer products</p>",
-            products: ["gid://shopify/Product/123", "gid://shopify/Product/456"],
+            products: [
+              "gid://shopify/Product/123",
+              "gid://shopify/Product/456",
+            ],
             sortOrder: "MANUAL",
             image: {
               src: "https://example.com/summer-collection.jpg",
-              alt: "Summer Collection"
-            }
+              alt: "Summer Collection",
+            },
           },
           smartCollection: {
             title: "Electronics Under $100",
@@ -319,19 +378,19 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
                 {
                   column: "TYPE",
                   relation: "EQUALS",
-                  condition: "Electronics"
+                  condition: "Electronics",
                 },
                 {
                   column: "VARIANT_PRICE",
                   relation: "LESS_THAN",
-                  condition: "100"
-                }
-              ]
+                  condition: "100",
+                },
+              ],
             },
-            sortOrder: "PRICE_ASC"
-          }
-        }
-      }
+            sortOrder: "PRICE_ASC",
+          },
+        },
+      },
     });
   } catch (error) {
     console.error("❌ Error fetching collection metadata:", error);
@@ -344,7 +403,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * USAGE EXAMPLES:
- * 
+ *
  * 1. Manual Collection:
  * POST /api/collections/create
  * {
@@ -357,7 +416,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  *     "alt": "Featured Products"
  *   }
  * }
- * 
+ *
  * 2. Smart Collection:
  * POST /api/collections/create
  * {
@@ -380,7 +439,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
  *   },
  *   "sortOrder": "PRICE_ASC"
  * }
- * 
+ *
  * 3. Complex Smart Collection:
  * POST /api/collections/create
  * {

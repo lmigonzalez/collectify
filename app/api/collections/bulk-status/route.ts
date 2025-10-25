@@ -23,6 +23,16 @@ interface BulkStatusResult {
   error?: string;
 }
 
+interface GraphQLResponse {
+  data?: {
+    node?: BulkOperationStatus;
+    currentBulkOperation?: BulkOperationStatus;
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
 /**
  * GET endpoint to check bulk operation status
  */
@@ -71,7 +81,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<BulkStatus
       }
     });
 
-    const data = await response.json();
+    const data = await response.json() as GraphQLResponse;
 
     if (data.data?.node) {
       const bulkOperation: BulkOperationStatus = data.data.node;
@@ -144,7 +154,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<BulkStatu
       }
     `);
 
-    const data = await response.json();
+    const data = await response.json() as GraphQLResponse;
 
     if (data.data?.currentBulkOperation) {
       const bulkOperation: BulkOperationStatus = data.data.currentBulkOperation;

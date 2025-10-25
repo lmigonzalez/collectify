@@ -39,6 +39,21 @@ interface ExportResult {
   error?: string;
 }
 
+interface GraphQLResponse {
+  data?: {
+    collections?: {
+      pageInfo: {
+        hasNextPage: boolean;
+        endCursor: string | null;
+      };
+      nodes: Collection[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
 /**
  * GET endpoint to export all collections from the store
  */
@@ -98,7 +113,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ExportResu
         }
       });
 
-      const data = await response.json();
+      const data = await response.json() as GraphQLResponse;
 
       if (data.data?.collections?.nodes) {
         allCollections.push(...data.data.collections.nodes);
@@ -231,7 +246,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ExportRes
         }
       });
 
-      const data = await response.json();
+      const data = await response.json() as GraphQLResponse;
 
       if (data.data?.collections?.nodes) {
         allCollections.push(...data.data.collections.nodes);

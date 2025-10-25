@@ -1,6 +1,5 @@
 import React from "react";
 import { CSVPreviewData } from "../../types/upload";
-import "../../types/shopify-components";
 
 interface PreviewSectionProps {
   csvPreview: CSVPreviewData;
@@ -18,9 +17,9 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
   onGoBack,
 }) => {
   return (
-    <s-layout-section>
-      <s-card>
-        <div className="p-6">
+    <s-stack direction="block" gap="base">
+      <s-box padding="base" background="base" border="base" borderRadius="base">
+        <s-stack direction="block" gap="base">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-2xl font-bold text-gray-900">CSV Preview</h3>
             <s-button variant="secondary" onClick={onGoBack}>
@@ -57,15 +56,13 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
             <div className="mb-6">
               <div className="overflow-auto max-h-[400px] border border-gray-200 rounded-md">
                 <s-table>
-                  <s-table-head>
+                  <thead>
                     <s-table-row>
                       {csvPreview.headers.map((header, index) => (
-                        <s-table-header-cell key={index}>
-                          {header}
-                        </s-table-header-cell>
+                        <th key={index}>{header}</th>
                       ))}
                     </s-table-row>
-                  </s-table-head>
+                  </thead>
                   <s-table-body>
                     {csvPreview.rows.slice(0, 10).map((row, rowIndex) => (
                       <s-table-row key={rowIndex}>
@@ -100,8 +97,8 @@ export const PreviewSection: React.FC<PreviewSectionProps> = ({
               Cancel
             </s-button>
           </div>
-        </div>
-      </s-card>
-    </s-layout-section>
+        </s-stack>
+      </s-box>
+    </s-stack>
   );
 };

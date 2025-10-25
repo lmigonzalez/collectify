@@ -1,5 +1,6 @@
 import { ShopifyAppProvider } from "./providers";
 import "./globals.css";
+import Script from "next/script";
 
 export default function RootLayout({
   children,
@@ -14,10 +15,16 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <meta name="shopify-api-key" content={apiKey} />
-        <script src="https://cdn.shopify.com/shopifycloud/app-bridge.js"></script>
-        <script src="https://cdn.shopify.com/shopifycloud/polaris.js"></script>
       </head>
       <body>
+        <Script
+          src="https://cdn.shopify.com/shopifycloud/app-bridge.js"
+          strategy="beforeInteractive"
+        />
+        <Script
+          src="https://cdn.shopify.com/shopifycloud/polaris.js"
+          strategy="beforeInteractive"
+        />
         <ShopifyAppProvider>{children}</ShopifyAppProvider>
       </body>
     </html>

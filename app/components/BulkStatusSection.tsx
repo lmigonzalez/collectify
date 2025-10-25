@@ -1,6 +1,5 @@
 import React from "react";
 import { BulkUploadResult, BulkOperationStatus } from "../../types/upload";
-import "../../types/shopify-components";
 
 interface BulkStatusSectionProps {
   bulkUploadResult: BulkUploadResult | null;
@@ -20,8 +19,13 @@ export const BulkStatusSection: React.FC<BulkStatusSectionProps> = ({
   return (
     <>
       {bulkUploadResult && (
-        <s-layout-section>
-          <s-card>
+        <s-stack direction="block" gap="base">
+          <s-box
+            padding="base"
+            background="base"
+            border="base"
+            borderRadius="base"
+          >
             <div className="p-6">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
                 Bulk Operation Status
@@ -41,13 +45,18 @@ export const BulkStatusSection: React.FC<BulkStatusSectionProps> = ({
                 </p>
               )}
             </div>
-          </s-card>
-        </s-layout-section>
+          </s-box>
+        </s-stack>
       )}
 
       {bulkOperationStatus && (
-        <s-layout-section>
-          <s-card>
+        <s-stack direction="block" gap="base">
+          <s-box
+            padding="base"
+            background="base"
+            border="base"
+            borderRadius="base"
+          >
             <div className="p-6">
               <h3 className="text-2xl font-bold text-gray-900 mb-4">
                 Operation Progress
@@ -104,8 +113,8 @@ export const BulkStatusSection: React.FC<BulkStatusSectionProps> = ({
                 </div>
               )}
             </div>
-          </s-card>
-        </s-layout-section>
+          </s-box>
+        </s-stack>
       )}
     </>
   );

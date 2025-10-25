@@ -1,12 +1,13 @@
 import React from "react";
 import { UploadStep } from "../../types/upload";
-import "../../types/shopify-components";
 
 interface ProgressStepsProps {
   currentStep: UploadStep;
 }
 
-export const ProgressSteps: React.FC<ProgressStepsProps> = ({ currentStep }) => {
+export const ProgressSteps: React.FC<ProgressStepsProps> = ({
+  currentStep,
+}) => {
   const steps = [
     { key: "upload", label: "Upload File" },
     { key: "preview", label: "Review Data" },

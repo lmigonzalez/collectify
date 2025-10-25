@@ -1,11 +1,10 @@
 import React from "react";
-import "../../types/shopify-components";
 
 interface UploadSectionProps {
   useBulkOperations: boolean;
   onBulkOperationsChange: (useBulk: boolean) => void;
   onFileUpload: (file: File) => void;
-  onDropRejected: (event: React.FormEvent<HTMLElement>) => void;
+  onDropRejected: (event: Event) => void;
 }
 
 export const UploadSection: React.FC<UploadSectionProps> = ({
@@ -14,7 +13,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   onFileUpload,
   onDropRejected,
 }) => {
-  const handleDropZoneInput = (event: React.FormEvent<HTMLElement>) => {
+  const handleDropZoneInput = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
@@ -22,7 +21,7 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
     }
   };
 
-  const handleDropZoneChange = (event: React.FormEvent<HTMLElement>) => {
+  const handleDropZoneChange = (event: Event) => {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
     if (file) {
@@ -31,46 +30,42 @@ export const UploadSection: React.FC<UploadSectionProps> = ({
   };
 
   return (
-    <s-layout-section>
-      <s-card>
-        <div className="p-6">
-          <div className="mb-6">
-            <p className="text-sm text-gray-500 mb-4">
-              Upload a CSV file to import collections into your store. The file
-              should contain collection data with proper headers.
-            </p>
+    <s-stack direction="block" gap="base">
+      <s-box padding="base" background="base" border="base" borderRadius="base">
+        <s-stack direction="block" gap="base">
+          <s-text type="strong">
+            Upload a CSV file to import collections into your store. The file
+            should contain collection data with proper headers.
+          </s-text>
 
-            <div style={{ marginBottom: "16px" }}>
-              <label className="flex items-center gap-2 mb-2">
-                <s-checkbox
-                  checked={useBulkOperations}
-                  onChange={(e) =>
-                    onBulkOperationsChange((e.currentTarget as unknown as HTMLInputElement).checked)
-                  }
-                />
-                <span className="text-sm text-gray-500">
-                  Use Bulk Operations (Recommended for large files)
-                </span>
-              </label>
-
-              <p className="text-xs text-gray-500">
-                {useBulkOperations
-                  ? "Faster processing, no rate limits, asynchronous processing. Best for files with 10+ collections."
-                  : "Synchronous processing, immediate results. Best for small files with <10 collections."}
-              </p>
-            </div>
-
-            <s-drop-zone
-              label="Choose CSV file"
-              accessibilityLabel="Upload CSV file containing collection data"
-              accept=".csv"
-              onInput={handleDropZoneInput}
-              onChange={handleDropZoneChange}
-              onDropRejected={onDropRejected}
+          <s-stack direction="inline" gap="base small" alignItems="center">
+            <s-checkbox
+              label="Use Bulk Operations (Recommended for large files)"
+              checked={useBulkOperations}
+              onChange={(e) =>
+                onBulkOperationsChange(
+                  (e.currentTarget as unknown as HTMLInputElement).checked
+                )
+              }
             />
-          </div>
-        </div>
-      </s-card>
-    </s-layout-section>
+
+            <s-text type="strong">
+              {useBulkOperations
+                ? "Faster processing, no rate limits, asynchronous processing. Best for files with 10+ collections."
+                : "Synchronous processing, immediate results. Best for small files with <10 collections."}
+            </s-text>
+          </s-stack>
+
+          <s-drop-zone
+            label="Choose CSV file"
+            accessibilityLabel="Upload CSV file containing collection data"
+            accept=".csv"
+            onInput={handleDropZoneInput}
+            onChange={handleDropZoneChange}
+            onDropRejected={onDropRejected}
+          />
+        </s-stack>
+      </s-box>
+    </s-stack>
   );
 };

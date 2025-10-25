@@ -61,6 +61,34 @@ interface CollectionCSVRow {
   published?: boolean;
 }
 
+interface StagedUploadsCreateResponse {
+  data?: {
+    stagedUploadsCreate?: {
+      userErrors: Array<{
+        message: string;
+      }>;
+      stagedTargets: StagedUploadTarget[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
+interface BulkOperationRunMutationResponse {
+  data?: {
+    bulkOperationRunMutation?: {
+      userErrors: Array<{
+        message: string;
+      }>;
+      bulkOperation: BulkOperation;
+    };
+  };
+  errors?: Array<{
+    message: string;
+  }>;
+}
+
 /**
  * Parses CSV content into rows
  */
@@ -289,12 +317,16 @@ async function createStagedUpload(admin: ShopifyAdmin, filename: string): Promis
     }
   );
 
-  const data = await response.json();
+  const data = await response.json() as StagedUploadsCreateResponse;
 
-  if (data.data?.stagedUploadsCreate?.userErrors?.length > 0) {
+  if (data.data?.stagedUploadsCreate?.userErrors?.length && data.data.stagedUploadsCreate.userErrors.length > 0) {
     throw new Error(
       data.data.stagedUploadsCreate.userErrors.map((e: { message: string }) => e.message).join(", ")
     );
+  }
+
+  if (!data.data?.stagedUploadsCreate?.stagedTargets?.[0]) {
+    throw new Error("No staged upload target returned");
   }
 
   return data.data.stagedUploadsCreate.stagedTargets[0];
@@ -374,14 +406,18 @@ async function createBulkOperation(admin: ShopifyAdmin, stagedUploadPath: string
     }
   );
 
-  const data = await response.json();
+  const data = await response.json() as BulkOperationRunMutationResponse;
 
-  if (data.data?.bulkOperationRunMutation?.userErrors?.length > 0) {
+  if (data.data?.bulkOperationRunMutation?.userErrors?.length && data.data.bulkOperationRunMutation.userErrors.length > 0) {
     throw new Error(
       data.data.bulkOperationRunMutation.userErrors
         .map((e: { message: string }) => e.message)
         .join(", ")
     );
+  }
+
+  if (!data.data?.bulkOperationRunMutation?.bulkOperation) {
+    throw new Error("No bulk operation returned");
   }
 
   return data.data.bulkOperationRunMutation.bulkOperation;

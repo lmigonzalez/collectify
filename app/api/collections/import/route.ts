@@ -5,11 +5,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/lib/authenticate";
 import type {
   CollectionInput,
+  CollectionCreateMutation,
+  CollectionCreateMutationVariables,
+} from "@/types/graphql";
+import {
   CollectionRuleColumn,
   CollectionRuleRelation,
   CollectionSortOrder,
-  CollectionCreateMutation,
-  CollectionCreateMutationVariables,
 } from "@/types/graphql";
 
 interface ImportResult {
