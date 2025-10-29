@@ -86,7 +86,7 @@ export async function GET(request: NextRequest) {
 
     const subscriptions = data.data?.currentAppInstallation.activeSubscriptions || [];
     
-
+    // Find the active subscription
     const activeSubscription = subscriptions.find(
       (sub: Subscription) => sub.status === "ACTIVE"
     );
