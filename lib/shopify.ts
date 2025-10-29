@@ -16,7 +16,7 @@ const shopify = shopifyApi({
   scopes: (
     process.env.SHOPIFY_SCOPES ||
     process.env.SCOPES ||
-    "write_products,read_products,read_product_listings"
+    "write_products,read_products,read_product_listings,write_apps"
   )
     .split(",")
     .filter((scope) => scope.trim() !== ""),

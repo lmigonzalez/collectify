@@ -43,111 +43,114 @@ Example Collection,example-collection,Multiple conditions example,Example,Multip
 
   return (
     <s-page heading="Collections Management">
-      <s-section>
-        <s-stack gap="base">
-          {/* Collection Actions */}
-          <s-box
-            padding="base"
-            background="base"
-            borderRadius="base"
-            border="base"
-          >
-            <s-stack gap="base">
-              <s-heading>Collection Actions</s-heading>
-              <s-paragraph color="subdued">
-                Manage your product collections with upload, download, and
-                create features.
-              </s-paragraph>
+      <s-stack direction="block" gap="large" padding="large">
+        {" "}
+        <s-section>
+          <s-stack gap="base">
+            {/* Collection Actions */}
+            <s-box
+              padding="base"
+              background="base"
+              borderRadius="base"
+              border="base"
+            >
+              <s-stack gap="base">
+                <s-heading>Collection Actions</s-heading>
+                <s-paragraph color="subdued">
+                  Manage your product collections with upload, download, and
+                  create features.
+                </s-paragraph>
 
-              <s-stack direction="inline" gap="small-200">
-                <s-button
-                  variant="secondary"
-                  onClick={() => router.push("/collections/upload")}
-                >
-                  Upload Collections
-                </s-button>
-                <s-button
-                  variant="secondary"
-                  onClick={() => router.push("/collections/download")}
-                >
-                  Download Collections
-                </s-button>
-                <s-button
-                  variant="primary"
-                  onClick={() => router.push("/collections/create")}
-                >
-                  Create Collection
-                </s-button>
+                <s-stack direction="inline" gap="small-200">
+                  <s-button
+                    variant="secondary"
+                    onClick={() => router.push("/collections/upload")}
+                  >
+                    Upload Collections
+                  </s-button>
+                  <s-button
+                    variant="secondary"
+                    onClick={() => router.push("/collections/download")}
+                  >
+                    Download Collections
+                  </s-button>
+                  <s-button
+                    variant="primary"
+                    onClick={() => router.push("/collections/create")}
+                  >
+                    Create Collection
+                  </s-button>
+                </s-stack>
               </s-stack>
-            </s-stack>
-          </s-box>
+            </s-box>
 
-          {/* Template Downloads */}
-          <s-box
-            padding="base"
-            background="base"
-            borderRadius="base"
-            border="base"
-          >
-            <s-stack gap="base">
-              <s-heading>Download Templates</s-heading>
-              <s-paragraph color="subdued">
-                Get CSV templates to create collections manually or set up smart
-                collections with conditions.
-              </s-paragraph>
+            {/* Template Downloads */}
+            <s-box
+              padding="base"
+              background="base"
+              borderRadius="base"
+              border="base"
+            >
+              <s-stack gap="base">
+                <s-heading>Download Templates</s-heading>
+                <s-paragraph color="subdued">
+                  Get CSV templates to create collections manually or set up
+                  smart collections with conditions.
+                </s-paragraph>
 
-              <s-grid
-                gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
-                gap="base"
-              >
-                <s-box
-                  padding="base"
-                  background="base"
-                  borderRadius="base"
-                  border="base"
+                <s-grid
+                  gridTemplateColumns="repeat(auto-fit, minmax(300px, 1fr))"
+                  gap="base"
                 >
-                  <s-stack gap="base">
-                    <s-heading>Manual Collection Template</s-heading>
-                    <s-paragraph color="subdued">
-                      Template for manually curated collections. Add products by
-                      title, handle, or SKU.
-                    </s-paragraph>
-                    <s-button
-                      variant="primary"
-                      onClick={() => handleDownloadTemplate("manual")}
-                      loading={loading}
-                    >
-                      Download Manual Template
-                    </s-button>
-                  </s-stack>
-                </s-box>
+                  <s-box
+                    padding="base"
+                    background="base"
+                    borderRadius="base"
+                    border="base"
+                  >
+                    <s-stack gap="base">
+                      <s-heading>Manual Collection Template</s-heading>
+                      <s-paragraph color="subdued">
+                        Template for manually curated collections. Add products
+                        by title, handle, or SKU.
+                      </s-paragraph>
+                      <s-button
+                        variant="primary"
+                        onClick={() => handleDownloadTemplate("manual")}
+                        loading={loading}
+                      >
+                        Download Manual Template
+                      </s-button>
+                    </s-stack>
+                  </s-box>
 
-                <s-box
-                  padding="base"
-                  background="base"
-                  borderRadius="base"
-                  border="base"
-                >
-                  <s-stack gap="base">
-                    <s-heading>Smart Collection Template</s-heading>
-                    <s-paragraph color="subdued">
-                      Template for automated collections based on product
-                      conditions and rules.
-                    </s-paragraph>
-                    <s-button
-                      variant="primary"
-                      onClick={() => handleDownloadTemplate("smart")}
-                      loading={loading}
-                    >
-                      Download Smart Template
-                    </s-button>
-                  </s-stack>
-                </s-box>
-              </s-grid>
-            </s-stack>
-          </s-box>
-        </s-stack>
-      </s-section>
+                  <s-box
+                    padding="base"
+                    background="base"
+                    borderRadius="base"
+                    border="base"
+                  >
+                    <s-stack gap="base">
+                      <s-heading>Smart Collection Template</s-heading>
+                      <s-paragraph color="subdued">
+                        Template for automated collections based on product
+                        conditions and rules.
+                      </s-paragraph>
+                      <s-button
+                        variant="primary"
+                        onClick={() => handleDownloadTemplate("smart")}
+                        loading={loading}
+                      >
+                        Download Smart Template
+                      </s-button>
+                    </s-stack>
+                  </s-box>
+                </s-grid>
+              </s-stack>
+            </s-box>
+          </s-stack>
+        </s-section>{" "}
+      </s-stack>
     </s-page>
   );
 }

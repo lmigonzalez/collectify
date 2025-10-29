@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/lib/authenticate";
+import { withUsageLimit, getImportCount } from "@/lib/usage-middleware";
 import type {
   CollectionInput,
   CollectionCreateMutation,
@@ -337,15 +338,22 @@ async function createCollection(
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<ImportResult>> {
-  try {
-    // Step 1: Authenticate the request
-    const { session, admin } = await authenticate(request);
+  return withUsageLimit(
+    request,
+    {
+      operation: 'import',
+      getRequestedCount: getImportCount
+    },
+    async (request) => {
+      try {
+        // Step 1: Authenticate the request
+        const { session, admin } = await authenticate(request);
 
-    console.log("🔐 Authenticated for shop:", session.shop);
-    console.log(
-      "🔑 Using token:",
-      session.accessToken?.substring(0, 20) + "..."
-    );
+        console.log("🔐 Authenticated for shop:", session.shop);
+        console.log(
+          "🔑 Using token:",
+          session.accessToken?.substring(0, 20) + "..."
+        );
 
     // Step 2: Parse form data
     const formData = await request.formData();
@@ -465,43 +473,45 @@ export async function POST(
       }
     }
 
-    return NextResponse.json({
-      success: errors === 0,
-      created,
-      updated,
-      errors,
-      results,
-    });
-  } catch (error) {
-    console.error("❌ Collection import error:", error);
+        return NextResponse.json({
+          success: errors === 0,
+          created,
+          updated,
+          errors,
+          results,
+        });
+      } catch (error) {
+        console.error("❌ Collection import error:", error);
 
-    if (error instanceof Error && error.message === "Authentication failed") {
-      return NextResponse.json(
-        {
-          success: false,
-          created: 0,
-          updated: 0,
-          errors: 0,
-          results: [],
-          error: "Unauthorized - please authenticate",
-        },
-        { status: 401 }
-      );
+        if (error instanceof Error && error.message === "Authentication failed") {
+          return NextResponse.json(
+            {
+              success: false,
+              created: 0,
+              updated: 0,
+              errors: 0,
+              results: [],
+              error: "Unauthorized - please authenticate",
+            },
+            { status: 401 }
+          );
+        }
+
+        return NextResponse.json(
+          {
+            success: false,
+            created: 0,
+            updated: 0,
+            errors: 0,
+            results: [],
+            error: "Internal server error",
+            details: error instanceof Error ? error.message : "Unknown error",
+          },
+          { status: 500 }
+        );
+      }
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        created: 0,
-        updated: 0,
-        errors: 0,
-        results: [],
-        error: "Internal server error",
-        details: error instanceof Error ? error.message : "Unknown error",
-      },
-      { status: 500 }
-    );
-  }
+  );
 }
 
 /**

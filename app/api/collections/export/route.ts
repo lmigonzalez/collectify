@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/lib/authenticate";
+import { withUsageLimit, getExportCount } from "@/lib/usage-middleware";
 
 interface Collection {
   id: string;
@@ -58,11 +59,18 @@ interface GraphQLResponse {
  * GET endpoint to export all collections from the store
  */
 export async function GET(request: NextRequest): Promise<NextResponse<ExportResult>> {
-  try {
-    // Step 1: Authenticate the request
-    const { session, admin } = await authenticate(request);
+  return withUsageLimit(
+    request,
+    {
+      operation: 'export',
+      getRequestedCount: getExportCount
+    },
+    async (request) => {
+      try {
+        // Step 1: Authenticate the request
+        const { session, admin } = await authenticate(request);
 
-    console.log("🔐 Authenticated for shop:", session.shop);
+        console.log("🔐 Authenticated for shop:", session.shop);
 
     // Step 2: Fetch all collections using GraphQL
     const allCollections: Collection[] = [];
@@ -131,39 +139,41 @@ export async function GET(request: NextRequest): Promise<NextResponse<ExportResu
       }
     }
 
-    console.log(`📊 Successfully fetched ${allCollections.length} collections`);
+        console.log(`📊 Successfully fetched ${allCollections.length} collections`);
 
-    return NextResponse.json({
-      success: true,
-      collections: allCollections,
-      totalCount: allCollections.length
-    });
+        return NextResponse.json({
+          success: true,
+          collections: allCollections,
+          totalCount: allCollections.length
+        });
 
-  } catch (error) {
-    console.error("❌ Collection export error:", error);
+      } catch (error) {
+        console.error("❌ Collection export error:", error);
 
-    if (error instanceof Error && error.message === "Authentication failed") {
-      return NextResponse.json(
-        {
-          success: false,
-          collections: [],
-          totalCount: 0,
-          error: "Unauthorized - please authenticate"
-        },
-        { status: 401 }
-      );
+        if (error instanceof Error && error.message === "Authentication failed") {
+          return NextResponse.json(
+            {
+              success: false,
+              collections: [],
+              totalCount: 0,
+              error: "Unauthorized - please authenticate"
+            },
+            { status: 401 }
+          );
+        }
+
+        return NextResponse.json(
+          {
+            success: false,
+            collections: [],
+            totalCount: 0,
+            error: error instanceof Error ? error.message : "Unknown error"
+          },
+          { status: 500 }
+        );
+      }
     }
-
-    return NextResponse.json(
-      {
-        success: false,
-        collections: [],
-        totalCount: 0,
-        error: error instanceof Error ? error.message : "Unknown error"
-      },
-      { status: 500 }
-    );
-  }
+  );
 }
 
 /**

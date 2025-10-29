@@ -24,3 +24,49 @@ model Session {
   collaborator  Boolean?  @default(false)
   emailVerified Boolean?  @default(false)
 }
+
+model Subscription {
+  id                String   @id @default(cuid())
+  shop              String   @unique
+  plan              String   // 'free', 'premium'
+  status            String   // 'active', 'cancelled', 'past_due'
+  currentPeriodStart DateTime
+  currentPeriodEnd   DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Usage tracking
+  usage             Usage[]
+  
+  @@map("subscriptions")
+}
+
+model Usage {
+  id             String   @id @default(cuid())
+  shop           String
+  subscriptionId String
+  month          Int      // 1-12
+  year           Int      // 2024, 2025, etc.
+  collectionsImported Int @default(0)
+  collectionsExported Int @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  subscription   Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+  
+  @@unique([shop, month, year])
+  @@map("usage")
+}
+
+model UsageLimit {
+  id             String   @id @default(cuid())
+  plan           String   @unique
+  monthlyLimit   Int      // Collections per month
+  perOperationLimit Int?  // Max collections per single operation
+  features       String[] // Array of feature flags
+  price          Int      // Price in cents
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  @@map("usage_limits")
+}

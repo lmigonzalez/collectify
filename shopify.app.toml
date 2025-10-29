@@ -6,7 +6,7 @@ application_url = "https://localhost"
 embedded = true
 
 [access_scopes]
-scopes = "write_products,read_products,read_product_listings"
+scopes = "write_products,read_products,read_product_listings,write_apps"
 
 [auth]
 redirect_urls = [
