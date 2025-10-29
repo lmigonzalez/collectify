@@ -27,16 +27,17 @@ export default function UpgradePrompt({
   return (
     <s-box 
       padding="base" 
-      background={isAtLimit ? "bg-surface-critical" : "bg-surface-warning"} 
+      background="base"
       borderRadius="base"
+      border="base"
     >
       <s-stack direction="block" gap="base">
-        <s-stack direction="row" gap="base" align="space-between">
-          <s-stack direction="block" gap="tight">
-            <s-text variant="bodyMd" fontWeight="semibold" tone={isAtLimit ? "critical" : "warning"}>
+        <s-stack direction="inline" gap="base">
+          <s-stack direction="block" gap="small">
+            <s-text>
               {isAtLimit ? "🚫 Monthly Limit Reached" : "⚠️ Approaching Monthly Limit"}
             </s-text>
-            <s-text variant="bodyMd" tone={isAtLimit ? "critical" : "warning"}>
+            <s-text>
               {isAtLimit 
                 ? "You've used all your collections for this month. Upgrade to continue."
                 : `You have ${remainingCollections} collections remaining this month.`
@@ -51,7 +52,7 @@ export default function UpgradePrompt({
           )}
         </s-stack>
 
-        <s-stack direction="row" gap="base">
+        <s-stack direction="inline" gap="base">
           <s-button 
             variant="primary" 
             href="/plan"
@@ -61,7 +62,7 @@ export default function UpgradePrompt({
           </s-button>
           
           {isAtLimit && (
-            <s-text variant="bodyMd" tone="subdued">
+            <s-text>
               Usage resets next month
             </s-text>
           )}

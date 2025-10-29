@@ -3,6 +3,43 @@
 
 import shopify from "./shopify";
 
+interface SubscriptionPlan {
+  pricingDetails: {
+    price: {
+      amount: string;
+      currencyCode: string;
+    };
+    interval: string;
+  };
+}
+
+interface SubscriptionLineItem {
+  id: string;
+  plan: SubscriptionPlan;
+}
+
+interface Subscription {
+  id: string;
+  name: string;
+  status: string;
+  lineItems: SubscriptionLineItem[];
+}
+
+interface GraphQLResponse {
+  data?: {
+    currentAppInstallation: {
+      activeSubscriptions: Subscription[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+    locations?: Array<{
+      line: number;
+      column: number;
+    }>;
+  }>;
+}
+
 export interface SubscriptionInfo {
   hasActiveSubscription: boolean;
   isProPlan: boolean;
@@ -22,10 +59,12 @@ export interface SubscriptionInfo {
  * Get current subscription information for a shop
  * This works with both manual billing and managed pricing
  */
-export async function getSubscriptionInfo(shop: string): Promise<SubscriptionInfo> {
+export async function getSubscriptionInfo(
+  shop: string
+): Promise<SubscriptionInfo> {
   try {
     // Get session for the shop
-    const session = await shopify.sessionStorage.loadSession(shop);
+    const session = await shopify.config.sessionStorage.loadSession(shop);
     if (!session) {
       return {
         hasActiveSubscription: false,
@@ -39,40 +78,35 @@ export async function getSubscriptionInfo(shop: string): Promise<SubscriptionInf
     const client = new shopify.clients.Graphql({ session });
 
     // Query current subscriptions
-    const response = await client.query({
-      data: {
-        query: `#graphql
-          query {
-            currentAppInstallation {
-              activeSubscriptions {
-                id
-                name
-                status
-                lineItems {
-                  id
-                  plan {
-                    pricingDetails {
-                      ... on AppRecurringPricing {
-                        price {
-                          amount
-                          currencyCode
-                        }
-                      }
+    const data = (await client.request(`#graphql
+      query {
+        currentAppInstallation {
+          activeSubscriptions {
+            id
+            name
+            status
+            lineItems {
+              id
+              plan {
+                pricingDetails {
+                  ... on AppRecurringPricing {
+                    price {
+                      amount
+                      currencyCode
                     }
                   }
                 }
               }
             }
-          }`,
-      },
-    });
+          }
+        }
+      }`)) as GraphQLResponse;
+    const subscriptions =
+      data.data?.currentAppInstallation.activeSubscriptions || [];
 
-    const data = await response.json();
-    const subscriptions = data.data.currentAppInstallation.activeSubscriptions;
-    
     // Find active subscription
     const activeSubscription = subscriptions.find(
-      (sub: any) => sub.status === "ACTIVE"
+      (sub: Subscription) => sub.status === "ACTIVE"
     );
 
     if (!activeSubscription) {
@@ -85,9 +119,11 @@ export async function getSubscriptionInfo(shop: string): Promise<SubscriptionInf
     }
 
     const price = activeSubscription.lineItems[0]?.plan?.pricingDetails?.price;
-    const interval = activeSubscription.lineItems[0]?.plan?.pricingDetails?.interval;
-    const isProPlan = price && (price.amount === 10 || price.amount === 100);
-    const isFreePlan = price && price.amount === 0;
+    const interval =
+      activeSubscription.lineItems[0]?.plan?.pricingDetails?.interval;
+    const priceAmount = price ? parseFloat(price.amount) : 0;
+    const isProPlan = price && (priceAmount === 10 || priceAmount === 100);
+    const isFreePlan = price && priceAmount === 0;
 
     return {
       hasActiveSubscription: true,
@@ -97,7 +133,9 @@ export async function getSubscriptionInfo(shop: string): Promise<SubscriptionInf
         id: activeSubscription.id,
         name: activeSubscription.name,
         status: activeSubscription.status,
-        price: price || { amount: 0, currencyCode: "USD" },
+        price: price
+          ? { amount: priceAmount, currencyCode: price.currencyCode }
+          : { amount: 0, currencyCode: "USD" },
       },
     };
   } catch (error) {
@@ -114,7 +152,10 @@ export async function getSubscriptionInfo(shop: string): Promise<SubscriptionInf
 /**
  * Check if user has access to a specific feature based on their plan
  */
-export function hasFeatureAccess(subscriptionInfo: SubscriptionInfo, feature: string): boolean {
+export function hasFeatureAccess(
+  subscriptionInfo: SubscriptionInfo,
+  feature: string
+): boolean {
   if (!subscriptionInfo.hasActiveSubscription) {
     return false;
   }

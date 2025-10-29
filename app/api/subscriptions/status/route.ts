@@ -1,6 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
 import { authenticate } from "@/lib/authenticate";
 
+interface SubscriptionPlan {
+  pricingDetails: {
+    price: {
+      amount: string;
+      currencyCode: string;
+    };
+    interval: string;
+  };
+}
+
+interface SubscriptionLineItem {
+  id: string;
+  plan: SubscriptionPlan;
+}
+
+interface Subscription {
+  id: string;
+  name: string;
+  status: string;
+  createdAt: string;
+  currentPeriodEnd: string;
+  lineItems: SubscriptionLineItem[];
+}
+
+interface GraphQLResponse {
+  data?: {
+    currentAppInstallation: {
+      activeSubscriptions: Subscription[];
+    };
+  };
+  errors?: Array<{
+    message: string;
+    locations?: Array<{
+      line: number;
+      column: number;
+    }>;
+  }>;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { admin } = await authenticate(request);
@@ -35,7 +74,7 @@ export async function GET(request: NextRequest) {
         }`
     );
 
-    const data = await response.json();
+    const data = await response.json() as GraphQLResponse;
 
     if (data.errors) {
       console.error("GraphQL errors:", data.errors);
@@ -45,11 +84,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const subscriptions = data.data.currentAppInstallation.activeSubscriptions;
+    const subscriptions = data.data?.currentAppInstallation.activeSubscriptions || [];
     
     // Find the active subscription
     const activeSubscription = subscriptions.find(
-      (sub: any) => sub.status === "ACTIVE"
+      (sub: Subscription) => sub.status === "ACTIVE"
     );
 
     return NextResponse.json({

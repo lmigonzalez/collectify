@@ -268,8 +268,8 @@ export default function PlanPage() {
           <s-stack direction="block" gap="small">
             <s-text>
               <strong>Note:</strong> Subscription management is handled securely
-              by Shopify. When you click any plan button, you'll be redirected
-              to Shopify's billing portal to complete your subscription.
+              by Shopify. When you click any plan button, you&apos;ll be redirected
+              to Shopify&apos;s billing portal to complete your subscription.
             </s-text>
             <s-text tone="neutral">
               You can manage your subscription, view billing history, and update

@@ -30,6 +30,10 @@ interface ImportResult {
   error?: string;
 }
 
+type ImportResponse = 
+  | { success: true; created: number; updated: number; errors: number; results: ImportResult["results"] }
+  | { success: false; created: number; updated: number; errors: number; results: ImportResult["results"]; error: string };
+
 interface CollectionCSVRow {
   id?: string;
   title: string;
@@ -337,14 +341,14 @@ async function createCollection(
  */
 export async function POST(
   request: NextRequest
-): Promise<NextResponse<ImportResult>> {
+): Promise<NextResponse<ImportResponse>> {
   return withUsageLimit(
     request,
     {
       operation: 'import',
       getRequestedCount: getImportCount
     },
-    async (request) => {
+    async (request): Promise<NextResponse<ImportResponse>> => {
       try {
         // Step 1: Authenticate the request
         const { session, admin } = await authenticate(request);
@@ -479,7 +483,7 @@ export async function POST(
           updated,
           errors,
           results,
-        });
+        } as ImportResponse);
       } catch (error) {
         console.error("❌ Collection import error:", error);
 

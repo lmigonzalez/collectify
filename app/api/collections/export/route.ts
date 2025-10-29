@@ -40,6 +40,10 @@ interface ExportResult {
   error?: string;
 }
 
+type ExportResponse = 
+  | { success: true; collections: Collection[]; totalCount: number }
+  | { success: false; collections: Collection[]; totalCount: number; error: string };
+
 interface GraphQLResponse {
   data?: {
     collections?: {
@@ -58,14 +62,14 @@ interface GraphQLResponse {
 /**
  * GET endpoint to export all collections from the store
  */
-export async function GET(request: NextRequest): Promise<NextResponse<ExportResult>> {
+export async function GET(request: NextRequest): Promise<NextResponse<ExportResponse>> {
   return withUsageLimit(
     request,
     {
       operation: 'export',
       getRequestedCount: getExportCount
     },
-    async (request) => {
+    async (request): Promise<NextResponse<ExportResponse>> => {
       try {
         // Step 1: Authenticate the request
         const { session, admin } = await authenticate(request);
@@ -179,7 +183,7 @@ export async function GET(request: NextRequest): Promise<NextResponse<ExportResu
 /**
  * POST endpoint to export collections with specific filters
  */
-export async function POST(request: NextRequest): Promise<NextResponse<ExportResult>> {
+export async function POST(request: NextRequest): Promise<NextResponse<ExportResponse>> {
   try {
     // Step 1: Authenticate the request
     const { session, admin } = await authenticate(request);

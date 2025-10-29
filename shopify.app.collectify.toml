@@ -2,7 +2,7 @@
 
 client_id = "d4362c0a74ba6506a5569f5da5e19ef7"
 name = "Collectify"
-application_url = "https://example.com"
+application_url = "https://collectify-hazel.vercel.app"
 embedded = true
 
 [build]
@@ -16,4 +16,4 @@ api_version = "2026-01"
 scopes = "write_products,read_products,read_product_listings"
 
 [auth]
-redirect_urls = [ "https://example.com/api/auth" ]
+redirect_urls = [ "https://collectify-hazel.vercel.app/api/auth" ]
