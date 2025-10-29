@@ -111,7 +111,7 @@ export async function getCurrentUsage(shop: string): Promise<{
 }
 
 /**
- * Check if shop can perform operation within limits
+ * Check if shop can perform operation within limitss
  */
 export async function checkUsageLimit(
   shop: string,
