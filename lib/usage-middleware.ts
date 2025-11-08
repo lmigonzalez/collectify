@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import shopify from "./shopify";
 import { checkUsageLimit, recordUsage, getUsageStats } from "./subscription";
 
 export interface UsageMiddlewareOptions {
@@ -16,12 +17,30 @@ export async function withUsageLimit<T = unknown>(
 ): Promise<NextResponse<T>> {
   try {
     // Extract shop from session (you'll need to implement this based on your auth)
-    const shop =
+    let shop =
       request.headers.get("x-shopify-shop-domain") ||
-      request.nextUrl.searchParams.get("shop") ||
-      "unknown";
+      request.nextUrl.searchParams.get("shop");
 
-    if (shop === "unknown") {
+    if (!shop) {
+      const authHeader = request.headers.get("authorization");
+
+      if (authHeader?.startsWith("Bearer ")) {
+        try {
+          const token = authHeader.replace("Bearer ", "");
+          const payload = await shopify.session.decodeSessionToken(token);
+          try {
+            const destUrl = new URL(payload.dest);
+            shop = destUrl.host;
+          } catch {
+            shop = payload.dest.replace(/^https?:\/\//, "").replace(/\/admin$/, "");
+          }
+        } catch (error) {
+          console.warn("Failed to decode session token for shop lookup:", error);
+        }
+      }
+    }
+
+    if (!shop) {
       return NextResponse.json(
         { error: "Shop not found in request" } as T,
         { status: 400 }

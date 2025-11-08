@@ -17,6 +17,22 @@ redirect_urls = [
 [webhooks]
 api_version = "2024-10"
 
+# Mandatory compliance webhooks for GDPR/privacy compliance
+# Required for all public apps on the Shopify App Store
+# See: https://shopify.dev/docs/apps/build/compliance/privacy-law-compliance
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request"]
+uri = "/api/webhooks/customers/data-request"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/redact"]
+uri = "/api/webhooks/customers/redact"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["shop/redact"]
+uri = "/api/webhooks/shop/redact"
+
 [pos]
 embedded = false
 

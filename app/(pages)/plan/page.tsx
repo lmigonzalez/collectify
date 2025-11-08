@@ -88,6 +88,9 @@ export default function PlanPage() {
 
   return (
     <s-page heading="Choose Your Plan">
+      <s-button href="https://admin.shopify.com/charges/collectify/pricing_plans">
+        Test
+      </s-button>
       <s-stack direction="block" gap="large" padding="large">
         {/* Current Subscription Status */}
         {subscriptionStatus?.hasActiveSubscription &&

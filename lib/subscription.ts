@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from './db';
 
 export type Plan = 'free' | 'premium';
@@ -41,6 +42,19 @@ export interface UsageCheck {
   upgradeRequired: boolean;
 }
 
+function isMissingTableError(error: unknown): error is Prisma.PrismaClientKnownRequestError {
+  return (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === 'P2021'
+  );
+}
+
+const FALLBACK_SUBSCRIPTION = {
+  id: 'fallback',
+  plan: 'free' as Plan,
+  status: 'active'
+};
+
 /**
  * Get or create subscription for a shop
  */
@@ -49,28 +63,39 @@ export async function getOrCreateSubscription(shop: string): Promise<{
   plan: Plan;
   status: string;
 }> {
-  let subscription = await prisma.subscription.findUnique({
-    where: { shop }
-  });
-
-  if (!subscription) {
-    // Create free subscription by default
-    subscription = await prisma.subscription.create({
-      data: {
-        shop,
-        plan: 'free',
-        status: 'active',
-        currentPeriodStart: new Date(),
-        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
-      }
+  try {
+    let subscription = await prisma.subscription.findUnique({
+      where: { shop }
     });
-  }
 
-  return {
-    id: subscription.id,
-    plan: subscription.plan as Plan,
-    status: subscription.status
-  };
+    if (!subscription) {
+      // Create free subscription by default
+      subscription = await prisma.subscription.create({
+        data: {
+          shop,
+          plan: 'free',
+          status: 'active',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+        }
+      });
+    }
+
+    return {
+      id: subscription.id,
+      plan: subscription.plan as Plan,
+      status: subscription.status
+    };
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn(
+        'Subscription table not found. Falling back to free plan limits. Run your Prisma migrations to enable usage tracking.'
+      );
+      return FALLBACK_SUBSCRIPTION;
+    }
+
+    throw error;
+  }
 }
 
 /**
@@ -81,33 +106,48 @@ export async function getCurrentUsage(shop: string): Promise<{
   collectionsExported: number;
   total: number;
 }> {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  try {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
 
-  const usage = await prisma.usage.findUnique({
-    where: {
-      shop_month_year: {
-        shop,
-        month,
-        year
+    const usage = await prisma.usage.findUnique({
+      where: {
+        shop_month_year: {
+          shop,
+          month,
+          year
+        }
       }
+    });
+
+    if (!usage) {
+      return {
+        collectionsImported: 0,
+        collectionsExported: 0,
+        total: 0
+      };
     }
-  });
 
-  if (!usage) {
     return {
-      collectionsImported: 0,
-      collectionsExported: 0,
-      total: 0
+      collectionsImported: usage.collectionsImported,
+      collectionsExported: usage.collectionsExported,
+      total: usage.collectionsImported + usage.collectionsExported
     };
-  }
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn(
+        'Usage table not found. Skipping usage tracking. Run your Prisma migrations to enable usage tracking.'
+      );
+      return {
+        collectionsImported: 0,
+        collectionsExported: 0,
+        total: 0
+      };
+    }
 
-  return {
-    collectionsImported: usage.collectionsImported,
-    collectionsExported: usage.collectionsExported,
-    total: usage.collectionsImported + usage.collectionsExported
-  };
+    throw error;
+  }
 }
 
 /**
@@ -159,38 +199,52 @@ export async function recordUsage(
   operation: 'import' | 'export',
   count: number
 ): Promise<void> {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
+  try {
+    const now = new Date();
+    const month = now.getMonth() + 1;
+    const year = now.getFullYear();
 
-  const subscription = await getOrCreateSubscription(shop);
+    const subscription = await getOrCreateSubscription(shop);
 
-  await prisma.usage.upsert({
-    where: {
-      shop_month_year: {
-        shop,
-        month,
-        year
-      }
-    },
-    update: {
-      collectionsImported: operation === 'import' 
-        ? { increment: count }
-        : undefined,
-      collectionsExported: operation === 'export'
-        ? { increment: count }
-        : undefined,
-      updatedAt: new Date()
-    },
-    create: {
-      shop,
-      subscriptionId: subscription.id,
-      month,
-      year,
-      collectionsImported: operation === 'import' ? count : 0,
-      collectionsExported: operation === 'export' ? count : 0
+    if (subscription.id === FALLBACK_SUBSCRIPTION.id) {
+      // Database tables are missing, skip recording usage
+      return;
     }
-  });
+
+    await prisma.usage.upsert({
+      where: {
+        shop_month_year: {
+          shop,
+          month,
+          year
+        }
+      },
+      update: {
+        collectionsImported:
+          operation === 'import' ? { increment: count } : undefined,
+        collectionsExported:
+          operation === 'export' ? { increment: count } : undefined,
+        updatedAt: new Date()
+      },
+      create: {
+        shop,
+        subscriptionId: subscription.id,
+        month,
+        year,
+        collectionsImported: operation === 'import' ? count : 0,
+        collectionsExported: operation === 'export' ? count : 0
+      }
+    });
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn(
+        'Usage table not found. Skipping usage recording. Run your Prisma migrations to enable usage tracking.'
+      );
+      return;
+    }
+
+    throw error;
+  }
 }
 
 /**
