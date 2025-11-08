@@ -24,24 +24,37 @@ interface ShopRedactPayload {
 }
 
 // Verify webhook authenticity using HMAC
+// Following Shopify's official HMAC verification algorithm
+// Reference: https://shopify.dev/docs/apps/build/webhooks/subscribe/https
 function verifyWebhook(body: string, hmacHeader: string | null): boolean {
-  if (!hmacHeader) return false;
-
-  const secret = process.env.SHOPIFY_API_SECRET;
-  if (!secret) {
-    console.error('SHOPIFY_API_SECRET not configured');
+  if (!hmacHeader) {
+    console.error('❌ Missing x-shopify-hmac-sha256 header');
     return false;
   }
 
-  const hash = crypto
-    .createHmac('sha256', secret)
-    .update(body, 'utf8')
-    .digest('base64');
+  const secret = process.env.SHOPIFY_API_SECRET;
+  if (!secret) {
+    console.error('❌ SHOPIFY_API_SECRET not configured');
+    return false;
+  }
 
-  return crypto.timingSafeEqual(
-    Buffer.from(hash),
-    Buffer.from(hmacHeader)
-  );
+  try {
+    // Calculate HMAC digest using the raw body and app secret
+    const calculatedHmac = crypto
+      .createHmac('sha256', secret)
+      .update(body, 'utf8')
+      .digest('base64');
+
+    // Use timing-safe comparison to prevent timing attacks
+    // Both values must be converted to buffers from base64 encoding
+    return crypto.timingSafeEqual(
+      Buffer.from(calculatedHmac, 'base64'),
+      Buffer.from(hmacHeader, 'base64')
+    );
+  } catch (error) {
+    console.error('❌ HMAC verification error:', error);
+    return false;
+  }
 }
 
 export async function POST(request: NextRequest) {
