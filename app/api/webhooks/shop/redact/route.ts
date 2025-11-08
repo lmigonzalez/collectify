@@ -108,12 +108,11 @@ export async function POST(request: NextRequest) {
       console.log(`✅ Deleted ${deletedSessions.count} sessions`);
 
       // Delete usage records (must be deleted before subscriptions due to foreign key)
-      const deletedUsage = await prisma.usage.deleteMany({
-        where: { 
-          shop: payload.shop_domain 
-        }
-      });
-      console.log(`✅ Deleted ${deletedUsage.count} usage records`);
+      const deletedUsageCount = await prisma.$executeRaw`
+        DELETE FROM "usage"
+        WHERE "shop" = ${payload.shop_domain}
+      `;
+      console.log(`✅ Deleted ${Number(deletedUsageCount)} usage records`);
 
       // Delete subscription records
       const deletedSubscriptions = await prisma.subscription.deleteMany({
