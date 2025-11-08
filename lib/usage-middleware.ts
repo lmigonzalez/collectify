@@ -35,7 +35,7 @@ export async function withUsageLimit<T = unknown>(
             shop = payload.dest.replace(/^https?:\/\//, "").replace(/\/admin$/, "");
           }
         } catch (error) {
-          console.warn("Failed to decode session token for shop lookup:", error);
+          console.warn("Failed to decode session token for shop lookupx:", error);
         }
       }
     }
