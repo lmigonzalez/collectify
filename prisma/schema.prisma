@@ -30,6 +30,7 @@ model Subscription {
   shop              String   @unique
   plan              String   // 'free', 'premium'
   status            String   // 'active', 'cancelled', 'past_due'
+  shopifySubscriptionId String? // Shopify's GraphQL ID for the subscription
   currentPeriodStart DateTime
   currentPeriodEnd   DateTime
   createdAt         DateTime @default(now())

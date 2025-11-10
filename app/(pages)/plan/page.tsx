@@ -1,283 +1,210 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { redirectToPricingPage } from "@/lib/shopify-managed-pricing";
+import React, { useEffect, useState } from "react";
 
-interface Subscription {
+type PlanStats = {
+  plan: string;
+  status: string;
+  limits: {
+    monthlyLimit: number;
+    perOperationLimit: number;
+    price: number;
+    features: string[];
+  };
+};
+
+type PlanDetail = {
   id: string;
   name: string;
-  status: string;
-  createdAt: string;
-  currentPeriodEnd: string;
-  lineItems: Array<{
-    id: string;
-    plan: {
-      pricingDetails: {
-        price: {
-          amount: number;
-          currencyCode: string;
-        };
-        interval: string;
-      };
-    };
-  }>;
-}
+  price: number;
+  features: string[];
+  aliases?: string[];
+};
 
-interface SubscriptionStatus {
-  hasActiveSubscription: boolean;
-  subscription: Subscription | null;
-  allSubscriptions: Subscription[];
-}
+const PLAN_DETAILS: PlanDetail[] = [
+  {
+    id: "free",
+    name: "Free",
+    price: 0,
+    features: [
+      "100 collections download per month",
+      "100 collections upload per month",
+      "100 collections per CSV file",
+      "Advanced download filters",
+      "Example templates",
+      "Fast support",
+    ],
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: 999,
+    aliases: ["premium"],
+    features: [
+      "10,000 collections download per month",
+      "10,000 collections upload per month",
+      "1,000 collections per CSV file",
+      "Advanced download filters",
+      "Example templates",
+      "Fast support",
+    ],
+  },
+];
 
 export default function PlanPage() {
-  const [subscriptionStatus, setSubscriptionStatus] =
-    useState<SubscriptionStatus | null>(null);
+  const [planStats, setPlanStats] = useState<PlanStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchSubscriptionStatus();
+    const fetchPlanStats = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch current subscription from Shopify
+        const subResponse = await fetch("/api/subscriptions/status");
+        if (!subResponse.ok) {
+          throw new Error("Unable to load subscription information.");
+        }
+        const subData = await subResponse.json();
+        console.debug("Current subscription from Shopify:", subData);
+
+        // Fetch usage stats
+        const statsResponse = await fetch("/api/usage/stats");
+        if (!statsResponse.ok) {
+          throw new Error("Unable to load plan information.");
+        }
+
+        const data = await statsResponse.json();
+        console.debug("Current plan response", data);
+
+        // Use the plan from Shopify subscription if available
+        const actualPlan = subData.plan || data.plan;
+
+        setPlanStats({
+          plan: actualPlan,
+          status: data.status,
+          limits: data.limits,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Something went wrong.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlanStats();
   }, []);
 
-  const fetchSubscriptionStatus = async () => {
-    try {
-      const response = await fetch("/api/subscriptions/status");
-      const data = await response.json();
-      setSubscriptionStatus(data);
-    } catch (error) {
-      console.error("Error fetching subscription status:", error);
-    } finally {
-      setLoading(false);
+  const renderPrice = (priceInCents: number) => {
+    if (priceInCents === 0) {
+      return "Included";
     }
+
+    return `$${(priceInCents / 100).toFixed(2)} / month`;
   };
-
-  const handlePlanSelection = () => {
-    // Redirect to Shopify's hosted plan selection page
-    redirectToPricingPage();
-  };
-
-  const getPlanPrice = (subscription: Subscription | null) => {
-    if (!subscription) return null;
-    const lineItem = subscription.lineItems[0];
-    return lineItem?.plan?.pricingDetails?.price;
-  };
-
-  const isCurrentPlan = (planType: "free" | "pro" | "proYearly") => {
-    if (!subscriptionStatus?.subscription) return false;
-
-    const price = getPlanPrice(subscriptionStatus.subscription);
-    if (!price) return false;
-
-    if (planType === "free" && price.amount === 0) return true;
-    if (planType === "pro" && price.amount === 10) return true;
-    if (planType === "proYearly" && price.amount === 100) return true;
-
-    return false;
-  };
-
-  if (loading) {
-    return (
-      <s-page heading="Choose Your Plan">
-        <s-stack direction="block" gap="large" padding="large">
-          <s-box>
-            <s-text>Loading subscription status...</s-text>
-          </s-box>
-        </s-stack>
-      </s-page>
-    );
-  }
 
   return (
-    <s-page heading="Choose Your Plan">
-      <s-button href="https://admin.shopify.com/charges/collectify/pricing_plans">
-        Test
-      </s-button>
-      <s-stack direction="block" gap="large" padding="large">
-        {/* Current Subscription Status */}
-        {subscriptionStatus?.hasActiveSubscription &&
-          subscriptionStatus.subscription && (
-            <s-box padding="large">
-              <s-stack direction="block" gap="small">
-                <s-text>Current Plan</s-text>
-                <s-text>
-                  <strong>{subscriptionStatus.subscription.name}</strong>
-                </s-text>
-                <s-text tone="neutral">
-                  Status: {subscriptionStatus.subscription.status}
-                </s-text>
-                {getPlanPrice(subscriptionStatus.subscription) && (
-                  <s-text tone="neutral">
-                    Price: $
-                    {getPlanPrice(subscriptionStatus.subscription)!.amount}{" "}
-                    {
-                      getPlanPrice(subscriptionStatus.subscription)!
-                        .currencyCode
-                    }{" "}
-                    /{" "}
-                    {subscriptionStatus.subscription.lineItems[0]?.plan
-                      ?.pricingDetails?.interval === "ANNUAL"
-                      ? "year"
-                      : "month"}
-                  </s-text>
-                )}
-              </s-stack>
-            </s-box>
-          )}
-
-        {/* Plan Selection */}
-        <s-stack direction="block" gap="large">
-          <s-text>Available Plans</s-text>
-
-          {/* Free Plan */}
-          <s-grid gridTemplateColumns="repeat(3, 1fr)" gap="large">
-            <s-grid-item>
-              <s-box
-                padding="large"
-                background="base"
-                border="base"
-                borderRadius="large"
-              >
-                <s-stack direction="block" gap="large">
-                  <s-stack direction="inline" gap="large">
-                    <s-stack direction="block" gap="small">
-                      <s-text>Free Plan</s-text>
-                      <s-text tone="neutral">
-                        Perfect for getting started with Collectify
-                      </s-text>
-                    </s-stack>
-                    <s-stack direction="block">
-                      <s-text>$0</s-text>
-                      <s-text tone="neutral">per month</s-text>
-                    </s-stack>
-                  </s-stack>
-
-                  <s-stack direction="block" gap="small">
-                    <s-text>✓ Basic collection management</s-text>
-                    <s-text>✓ Up to 100 collections per month</s-text>
-                    <s-text>✓ CSV import/export (100 collections/month)</s-text>
-                    <s-text>✓ Basic support</s-text>
-                  </s-stack>
-
-                  <s-button
-                    variant={isCurrentPlan("free") ? "secondary" : "primary"}
-                    disabled={isCurrentPlan("free")}
-                    onClick={handlePlanSelection}
-                  >
-                    {isCurrentPlan("free")
-                      ? "Current Plan"
-                      : "Select Free Plan"}
-                  </s-button>
-                </s-stack>
-              </s-box>
-            </s-grid-item>
-            <s-grid-item>
-              {/* Pro Plan Monthly */}
-              <s-box
-                padding="large"
-                background="base"
-                border="base"
-                borderRadius="large"
-              >
-                <s-stack direction="block" gap="large">
-                  <s-stack direction="inline" gap="large">
-                    <s-stack direction="block" gap="small">
-                      <s-text>Pro Plan (Monthly)</s-text>
-                      <s-text tone="neutral">
-                        Unlimited collections with batch processing
-                      </s-text>
-                    </s-stack>
-                    <s-stack direction="block">
-                      <s-text>$10</s-text>
-                      <s-text tone="neutral">per month</s-text>
-                    </s-stack>
-                  </s-stack>
-
-                  <s-stack direction="block" gap="small">
-                    <s-text>✓ Everything in Free Plan</s-text>
-                    <s-text>✓ Unlimited collections per month</s-text>
-                    <s-text>
-                      ✓ Batch processing (1000 collections per batch)
-                    </s-text>
-                    <s-text>✓ Priority support</s-text>
-                    <s-text>✓ Advanced analytics</s-text>
-                    <s-text>✓ API access</s-text>
-                  </s-stack>
-
-                  <s-button
-                    variant={isCurrentPlan("pro") ? "secondary" : "primary"}
-                    disabled={isCurrentPlan("pro")}
-                    onClick={handlePlanSelection}
-                  >
-                    {isCurrentPlan("pro")
-                      ? "Current Plan"
-                      : "Select Pro Plan (Monthly)"}
-                  </s-button>
-                </s-stack>
-              </s-box>
-            </s-grid-item>
-            <s-grid-item>
-              {/* Pro Plan Yearly */}
-              <s-box
-                padding="large"
-                background="base"
-                border="base"
-                borderRadius="large"
-              >
-                <s-stack direction="block" gap="large">
-                  <s-stack direction="inline" gap="large">
-                    <s-stack direction="block" gap="small">
-                      <s-text>Pro Plan (Yearly)</s-text>
-                      <s-text tone="neutral">
-                        Best value - Save 17% with annual billing
-                      </s-text>
-                    </s-stack>
-                    <s-stack direction="block">
-                      <s-text>$100</s-text>
-                      <s-text tone="neutral">per year</s-text>
-                      <s-text tone="success">Save $20/year</s-text>
-                    </s-stack>
-                  </s-stack>
-
-                  <s-stack direction="block" gap="small">
-                    <s-text>✓ Everything in Pro Monthly</s-text>
-                    <s-text>✓ Unlimited collections per month</s-text>
-                    <s-text>
-                      ✓ Batch processing (1000 collections per batch)
-                    </s-text>
-                    <s-text>✓ Priority support</s-text>
-                    <s-text>✓ Advanced analytics</s-text>
-                    <s-text>✓ API access</s-text>
-                    <s-text>✓ 17% savings vs monthly</s-text>
-                  </s-stack>
-
-                  <s-button
-                    variant={
-                      isCurrentPlan("proYearly") ? "secondary" : "primary"
-                    }
-                    disabled={isCurrentPlan("proYearly")}
-                    onClick={handlePlanSelection}
-                  >
-                    {isCurrentPlan("proYearly")
-                      ? "Current Plan"
-                      : "Select Pro Plan (Yearly)"}
-                  </s-button>
-                </s-stack>
-              </s-box>
-            </s-grid-item>
-          </s-grid>
-        </s-stack>
-
-        {/* Managed Pricing Notice */}
+    <s-page heading="Your Plan" inlineSize="large">
+      <s-stack>
+        {" "}
         <s-box padding="large">
-          <s-stack direction="block" gap="small">
-            <s-text>
-              <strong>Note:</strong> Subscription management is handled securely
-              by Shopify. When you click any plan button, you&apos;ll be redirected
-              to Shopify&apos;s billing portal to complete your subscription.
-            </s-text>
-            <s-text tone="neutral">
-              You can manage your subscription, view billing history, and update
-              payment methods directly in your Shopify admin.
-            </s-text>
+          <s-stack direction="block" gap="large">
+            {loading && (
+              <s-stack direction="inline" gap="base">
+                <s-spinner size="base" />
+                <span>Loading your plan…</span>
+              </s-stack>
+            )}
+
+            {error && (
+              <s-box background="subdued" padding="base" borderRadius="base">
+                <s-stack direction="block" gap="base">
+                  <s-text>{error}</s-text>
+                  <s-button onClick={() => window.location.reload()}>
+                    Try again
+                  </s-button>
+                </s-stack>
+              </s-box>
+            )}
+
+             {!loading && !error && planStats && (
+              <s-stack direction="block" gap="large">
+                <div className="flex flex-wrap gap-6">
+                   {PLAN_DETAILS.map((planDetail) => {
+                     const normalizedPlan = planStats.plan.toLowerCase();
+                     const matchesAlias = planDetail.aliases?.some(
+                       (alias) => alias.toLowerCase() === normalizedPlan
+                     );
+                     const isCurrent =
+                       normalizedPlan === planDetail.id.toLowerCase() ||
+                       Boolean(matchesAlias);
+
+                    return (
+                      <div
+                         key={planDetail.id}
+                        className={`flex-1 min-w-[320px] rounded-2xl border border-slate-200 bg-white p-6 shadow-sm ${
+                          isCurrent ? "ring-2 ring-blue-500" : ""
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <h2 className="text-xl font-bold">
+                            {planDetail.name}
+                          </h2>
+                          {isCurrent && (
+                            <s-badge tone="success" size="large-100">
+                              Current
+                            </s-badge>
+                          )}
+                        </div>
+                        <p className="mt-2 text-sm text-slate-600">
+                          {renderPrice(
+                            isCurrent
+                              ? planStats.limits.price
+                              : planDetail.price
+                          )}
+                        </p>
+                        <div className="my-4 h-px w-full bg-slate-200" />
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">
+                            Includes:
+                          </p>
+                          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-slate-700">
+                            {planDetail.features.map((feature) => (
+                              <li key={feature}>{feature}</li>
+                            ))}
+                          </ul>
+                        </div>
+                        {isCurrent && (
+                          <div className="mt-4 space-y-1 rounded-lg bg-slate-50 p-4 text-sm text-slate-700">
+                            <p>
+                              Status:{" "}
+                              <span className="capitalize">
+                                {planStats.status}
+                              </span>
+                            </p>
+                            <p>
+                              Monthly limit: {planStats.limits.monthlyLimit}
+                            </p>
+                            <p>
+                              Per operation limit:{" "}
+                              {planStats.limits.perOperationLimit}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <s-button
+                  variant="primary"
+                  href="https://admin.shopify.com/charges/collectify-6/pricing_plans"
+                >
+                  Manage plan
+                </s-button>
+              </s-stack>
+            )}
           </s-stack>
         </s-box>
       </s-stack>
