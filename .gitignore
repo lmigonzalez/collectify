@@ -43,7 +43,8 @@ next-env.d.ts
 # database
 *.sqlite
 *.sqlite-journal
-prisma/migrations/
+# Note: prisma/migrations/ should be committed to git for deployment
+# Only ignore local dev database file
 
 # graphql codegen
 types/*.schema.json
