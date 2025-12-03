@@ -147,7 +147,7 @@ export type Collection = {
       conditionObjectId?: string;
     }[];
   };
-  productsCount?: number;
+  productsCount?: { count: number };
   publishedOnCurrentPublication: boolean;
   createdAt: string;
   updatedAt: string;
