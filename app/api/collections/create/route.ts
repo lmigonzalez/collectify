@@ -36,8 +36,6 @@ interface CreateCollectionResponse {
       }[];
     };
     productsCount?: number;
-    publishedOnCurrentPublication: boolean;
-    createdAt: string;
     updatedAt: string;
   };
   error?: string;
@@ -127,12 +125,8 @@ function validateCollectionInput(input: CollectionInput): {
     );
   }
 
-  // Validate that we have either products or rules
-  if (!input.products && !input.ruleSet) {
-    errors.push(
-      "Must specify either products for manual collection or rules for smart collection"
-    );
-  }
+  // Note: Manual collections can be created empty (no products required)
+  // Smart collections must have at least one rule (already validated above)
 
   return {
     valid: errors.length === 0,
@@ -248,12 +242,11 @@ export async function POST(
                   column
                   relation
                   condition
-                  conditionObjectId
                 }
               }
-              productsCount
-              publishedOnCurrentPublication
-              createdAt
+              productsCount {
+                count
+              }
               updatedAt
             }
             userErrors {
@@ -314,9 +307,7 @@ export async function POST(
         seo: collection.seo,
         sortOrder: collection.sortOrder,
         ruleSet: collection.ruleSet,
-        productsCount: collection.productsCount,
-        publishedOnCurrentPublication: collection.publishedOnCurrentPublication,
-        createdAt: collection.createdAt,
+        productsCount: collection.productsCount?.count,
         updatedAt: collection.updatedAt,
       },
     });

@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 
 type PlanStats = {
   plan: string;
@@ -52,6 +53,7 @@ const PLAN_DETAILS: PlanDetail[] = [
 ];
 
 export default function PlanPage() {
+  const appBridge = useAppBridge();
   const [planStats, setPlanStats] = useState<PlanStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,8 +63,16 @@ export default function PlanPage() {
       try {
         setLoading(true);
 
+        // Get JWT token from App Bridge for authentication
+        const token = await appBridge.idToken();
+
         // Fetch current subscription from Shopify
-        const subResponse = await fetch("/api/subscriptions/status");
+        const subResponse = await fetch("/api/subscriptions/status", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         if (!subResponse.ok) {
           throw new Error("Unable to load subscription information.");
         }
@@ -70,7 +80,12 @@ export default function PlanPage() {
         console.debug("Current subscription from Shopify:", subData);
 
         // Fetch usage stats
-        const statsResponse = await fetch("/api/usage/stats");
+        const statsResponse = await fetch("/api/usage/stats", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
         if (!statsResponse.ok) {
           throw new Error("Unable to load plan information.");
         }

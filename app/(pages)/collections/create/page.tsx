@@ -447,7 +447,34 @@ export default function CreateCollection() {
       });
 
       const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        // Handle API errors
+        const errorMessages = result.details
+          ? Array.isArray(result.details)
+            ? result.details
+            : [result.error || "Failed to create collection"]
+          : [result.error || "Failed to create collection"];
+        setErrors(errorMessages);
+        return;
+      }
+
+      // Success! Show success message and optionally redirect
+      console.log("✅ Collection created successfully:", result.collection);
+      
+      // Reset form
+      setFormData(INITIAL_FORM_DATA);
+      setSelectedProducts([]);
+      
+      // Show success toast using App Bridge
+      try {
+        appBridge.toast.show(`Collection "${result.collection?.title}" created successfully!`);
+      } catch {
+        // Fallback if toast fails
+        alert(`Collection "${result.collection?.title}" created successfully!`);
+      }
     } catch (error) {
+      console.error("❌ Error creating collection:", error);
       setErrors(["Network error. Please try again."]);
     } finally {
       setIsLoading(false);
@@ -457,10 +484,28 @@ export default function CreateCollection() {
   return (
     <s-page heading="Create Collection">
       <s-stack direction="block" gap="large" padding="large">
+        {/* Error Display */}
+        {errors.length > 0 && (
+          <s-banner tone="critical" heading="Please fix the following errors:">
+            <s-unordered-list>
+              {errors.map((error, index) => (
+                <li key={index}>
+                  <s-text>{typeof error === 'string' ? error : JSON.stringify(error)}</s-text>
+                </li>
+              ))}
+            </s-unordered-list>
+          </s-banner>
+        )}
+
         {/* Basic Information */}
         <s-section padding="base">
+          <div style={{ marginBottom: "8px" }}>
+            <label style={{ display: "block", marginBottom: "4px", fontSize: "14px", fontWeight: "500" }}>
+              Collection Title <span style={{ color: "red" }}>*</span>
+            </label>
+          </div>
           <s-text-field
-            label="Collection Title"
+            label=""
             value={formData.title}
             placeholder="Enter collection title"
             onInput={(e) =>
@@ -541,7 +586,9 @@ export default function CreateCollection() {
           <s-section padding="base">
             {/* Smart Collection Rules */}
             <s-stack direction="block" gap="base">
-              <s-text type="strong">Collection Rules</s-text>
+              <s-text type="strong">
+                Collection Rules <span style={{ color: "red" }}>*</span>
+              </s-text>
               <s-text color="subdued">
                 Define rules to automatically include products in this
                 collection
@@ -574,48 +621,62 @@ export default function CreateCollection() {
                 formData.rules.map((rule, index) => (
                   <div key={index} className="flex gap-2">
                     <div className="w-full grid grid-cols-3 gap-2 items-end">
-                      {" "}
-                      <s-select
-                        value={rule.column}
-                        onChange={(event) =>
-                          updateRule(index, "column", event.currentTarget.value)
-                        }
-                      >
-                        {RULE_COLUMNS.map((column) => (
-                          <s-option key={column.value} value={column.value}>
-                            {column.label}
-                          </s-option>
-                        ))}
-                      </s-select>
-                      <s-select
-                        value={rule.relation}
-                        onChange={(event) =>
-                          updateRule(
-                            index,
-                            "relation",
-                            event.currentTarget.value
-                          )
-                        }
-                      >
-                        {RULE_RELATIONS.map((relation) => (
-                          <s-option key={relation.value} value={relation.value}>
-                            {relation.label}
-                          </s-option>
-                        ))}
-                      </s-select>
+                      <div>
+                        <label style={{ fontSize: "12px", color: "#666", marginBottom: "4px", display: "block" }}>
+                          Column <span style={{ color: "red" }}>*</span>
+                        </label>
+                        <s-select
+                          value={rule.column}
+                          onChange={(event) =>
+                            updateRule(index, "column", event.currentTarget.value)
+                          }
+                        >
+                          {RULE_COLUMNS.map((column) => (
+                            <s-option key={column.value} value={column.value}>
+                              {column.label}
+                            </s-option>
+                          ))}
+                        </s-select>
+                      </div>
+                      <div>
+                        <label style={{ fontSize: "12px", color: "#666", marginBottom: "4px", display: "block" }}>
+                          Relation <span style={{ color: "red" }}>*</span>
+                        </label>
+                        <s-select
+                          value={rule.relation}
+                          onChange={(event) =>
+                            updateRule(
+                              index,
+                              "relation",
+                              event.currentTarget.value
+                            )
+                          }
+                        >
+                          {RULE_RELATIONS.map((relation) => (
+                            <s-option key={relation.value} value={relation.value}>
+                              {relation.label}
+                            </s-option>
+                          ))}
+                        </s-select>
+                      </div>
                       {rule.relation !== CollectionRuleRelation.IS_SET &&
                         rule.relation !== CollectionRuleRelation.IS_NOT_SET && (
-                          <s-text-field
-                            placeholder="Enter condition value"
-                            value={rule.condition}
-                            onInput={(e) =>
-                              updateRule(
-                                index,
-                                "condition",
-                                (e.target as HTMLInputElement).value
-                              )
-                            }
-                          />
+                          <div>
+                            <label style={{ fontSize: "12px", color: "#666", marginBottom: "4px", display: "block" }}>
+                              Condition <span style={{ color: "red" }}>*</span>
+                            </label>
+                            <s-text-field
+                              placeholder="Enter condition value"
+                              value={rule.condition}
+                              onInput={(e) =>
+                                updateRule(
+                                  index,
+                                  "condition",
+                                  (e.target as HTMLInputElement).value
+                                )
+                              }
+                            />
+                          </div>
                         )}
                     </div>
                     {formData.rules.length > 1 && (
@@ -705,8 +766,14 @@ export default function CreateCollection() {
         </s-section>
 
         <s-stack alignItems="end">
-          <s-button variant="primary" icon="plus" onClick={handleSubmit}>
-            Create Collection
+          <s-button 
+            variant="primary" 
+            icon="plus" 
+            onClick={handleSubmit}
+            disabled={isLoading}
+            loading={isLoading}
+          >
+            {isLoading ? "Creating..." : "Create Collection"}
           </s-button>
         </s-stack>
       </s-stack>

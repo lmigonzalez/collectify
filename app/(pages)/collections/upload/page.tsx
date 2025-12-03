@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 import { ProgressSteps } from "../../../components/ProgressSteps";
 import { UploadSection } from "../../../components/UploadSection";
 import { PreviewSection } from "../../../components/PreviewSection";
@@ -17,6 +18,7 @@ import {
 } from "../../../../types/upload";
 
 export default function UploadPage() {
+  const appBridge = useAppBridge();
   const [isUploading, setIsUploading] = useState(false);
   const [uploadResult, setUploadResult] = useState<UploadResult | null>(null);
   const [bulkUploadResult, setBulkUploadResult] =
@@ -98,6 +100,9 @@ export default function UploadPage() {
     setBulkOperationStatus(null);
 
     try {
+      // Get JWT token from App Bridge for authentication
+      const token = await appBridge.idToken();
+      
       const formData = new FormData();
       formData.append("file", selectedFile);
 
@@ -108,6 +113,9 @@ export default function UploadPage() {
 
       const response = await fetch(endpoint, {
         method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
         body: formData,
       });
 
@@ -182,8 +190,17 @@ export default function UploadPage() {
     setIsCheckingStatus(true);
 
     try {
+      // Get JWT token from App Bridge for authentication
+      const token = await appBridge.idToken();
+      
       const response = await fetch(
-        `/api/collections/bulk-status?id=${bulkOperationId}`
+        `/api/collections/bulk-status?id=${bulkOperationId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
       const result = await response.json();
 

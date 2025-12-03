@@ -31,6 +31,20 @@ export const parseCSVLine = (line: string): string[] => {
   return result;
 };
 
+// Map common header variations to standard field names
+const normalizeHeader = (header: string): string => {
+  const normalized = header.trim().toLowerCase().replace(/"/g, "");
+  
+  // Map common variations
+  const headerMap: Record<string, string> = {
+    "description": "descriptionhtml",
+    "seo title": "seotitle",
+    "seo description": "seodescription",
+  };
+  
+  return headerMap[normalized] || normalized;
+};
+
 export const parseCSVForPreview = (csvContent: string): CSVPreviewData => {
   const lines = csvContent.split("\n").filter((line) => line.trim());
   if (lines.length < 2) {
@@ -44,6 +58,7 @@ export const parseCSVForPreview = (csvContent: string): CSVPreviewData => {
   }
 
   const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+  const normalizedHeaders = headers.map(normalizeHeader);
   const rows: string[][] = [];
   const errors: string[] = [];
   let validRows = 0;
@@ -61,8 +76,9 @@ export const parseCSVForPreview = (csvContent: string): CSVPreviewData => {
 
     rows.push(values);
 
-    // Basic validation
-    const title = values[headers.indexOf("title")]?.replace(/"/g, "") || "";
+    // Basic validation - find title field (case-insensitive)
+    const titleIndex = normalizedHeaders.indexOf("title");
+    const title = titleIndex >= 0 ? values[titleIndex]?.replace(/"/g, "") || "" : "";
     if (!title.trim()) {
       errors.push(`Row ${i + 1}: Title is required`);
     } else {

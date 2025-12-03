@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useAppBridge } from "@shopify/app-bridge-react";
 
 interface Collection {
   id: string;
@@ -44,6 +45,7 @@ interface ColumnOption {
 }
 
 export default function DownloadCSV() {
+  const appBridge = useAppBridge();
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadResult, setDownloadResult] = useState<DownloadResult | null>(
     null
@@ -164,7 +166,22 @@ export default function DownloadCSV() {
     setDownloadResult(null);
 
     try {
-      const response = await fetch("/api/collections/export");
+      // Get JWT token from App Bridge for authentication
+      const token = await appBridge.idToken();
+      
+      const response = await fetch("/api/collections/export", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      
+      // Check if response is ok before parsing
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}: ${response.statusText}` }));
+        throw new Error(errorData.error || `Received an error response ${response.status} ${response.statusText} from shopify`);
+      }
+      
       const result = await response.json();
 
       if (result.success) {
@@ -181,16 +198,17 @@ export default function DownloadCSV() {
           success: false,
           collectionsCount: 0,
           message: "Failed to fetch collections",
-          error: result.error,
+          error: result.error || "Unknown error occurred",
         });
       }
     } catch (error) {
       console.error("Download error:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to fetch collections";
       setDownloadResult({
         success: false,
         collectionsCount: 0,
-        message: "Network error occurred",
-        error: "Failed to fetch collections",
+        message: "Failed to fetch collections",
+        error: errorMessage,
       });
     } finally {
       setIsDownloading(false);

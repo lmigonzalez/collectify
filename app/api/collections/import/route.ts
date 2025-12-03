@@ -52,6 +52,20 @@ interface CollectionCSVRow {
   published?: boolean;
 }
 
+// Map common header variations to standard field names
+function normalizeHeader(header: string): string {
+  const normalized = header.trim().toLowerCase().replace(/"/g, "");
+  
+  // Map common variations
+  const headerMap: Record<string, string> = {
+    "description": "descriptionhtml",
+    "seo title": "seotitle",
+    "seo description": "seodescription",
+  };
+  
+  return headerMap[normalized] || normalized;
+}
+
 /**
  * Parses CSV content into rows
  */
@@ -60,6 +74,7 @@ function parseCSV(csvContent: string): CollectionCSVRow[] {
   if (lines.length < 2) return [];
 
   const headers = lines[0].split(",").map((h) => h.trim().replace(/"/g, ""));
+  const normalizedHeaders = headers.map(normalizeHeader);
   const rows: CollectionCSVRow[] = [];
 
   for (let i = 1; i < lines.length; i++) {
@@ -71,10 +86,10 @@ function parseCSV(csvContent: string): CollectionCSVRow[] {
       type: "manual",
     };
 
-    headers.forEach((header, index) => {
+    normalizedHeaders.forEach((normalizedHeader, index) => {
       const value = values[index]?.replace(/"/g, "") || "";
 
-      switch (header) {
+      switch (normalizedHeader) {
         case "id":
           row.id = value;
           break;
@@ -84,7 +99,7 @@ function parseCSV(csvContent: string): CollectionCSVRow[] {
         case "handle":
           row.handle = value;
           break;
-        case "descriptionHtml":
+        case "descriptionhtml":
           row.descriptionHtml = value;
           break;
         case "type":
@@ -96,25 +111,25 @@ function parseCSV(csvContent: string): CollectionCSVRow[] {
         case "rules":
           row.rules = value;
           break;
-        case "appliedDisjunctively":
+        case "applieddisjunctively":
           row.appliedDisjunctively = value.toLowerCase() === "true";
           break;
-        case "sortOrder":
+        case "sortorder":
           row.sortOrder = value;
           break;
-        case "imageUrl":
+        case "imageurl":
           row.imageUrl = value;
           break;
-        case "imageAlt":
+        case "imagealt":
           row.imageAlt = value;
           break;
-        case "seoTitle":
+        case "seotitle":
           row.seoTitle = value;
           break;
-        case "seoDescription":
+        case "seodescription":
           row.seoDescription = value;
           break;
-        case "templateSuffix":
+        case "templatesuffix":
           row.templateSuffix = value;
           break;
         case "published":
